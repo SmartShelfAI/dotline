@@ -499,10 +499,8 @@
   .tp-offset { width: 90px; height: 36px; font-size: 15px; font-family: var(--mono);
     border: 1px solid var(--hairline); border-radius: 8px; padding: 0 8px;
     background: var(--surface-2); color: var(--ink); }
-  .tp-date-row { display: flex; gap: 10px; align-items: center; }
   .tp-date-button {
     position: relative;
-    flex: 1;
     display: flex; align-items: center; justify-content: center;
     height: 44px; border: 1px solid var(--hairline); border-radius: 10px;
     background: var(--surface-2); color: var(--ink);
@@ -512,12 +510,6 @@
     position: absolute; inset: 0; width: 100%; height: 100%;
     opacity: 0; cursor: pointer; border: none; padding: 0; margin: 0;
   }
-  .tp-today-btn {
-    height: 44px; padding: 0 14px; border-radius: 10px;
-    border: 1px solid var(--hairline); background: var(--surface-2);
-    color: var(--ink); font-size: 14px; font-weight: 550; cursor: pointer;
-  }
-  .tp-today-btn:hover { background: var(--line); color: #fff; border-color: var(--line); }
   .tp-preview {
     background: var(--surface-2); border-radius: 12px;
     padding: 16px; text-align: center; font-size: 16px; color: var(--muted);
@@ -1220,13 +1212,10 @@
       </div>
       <div class="tp-field tp-date">
         <div class="tp-label">Date</div>
-        <div class="tp-date-row">
-          <label class="tp-date-button">
-            <span class="tp-date-display">${formatDateLabel(selectedDay)}</span>
-            <input class="tp-date-input" type="date" value="${formatDateInput(selectedDay)}" />
-          </label>
-          <button class="tp-today-btn" type="button">Today</button>
-        </div>
+        <label class="tp-date-button">
+          <span class="tp-date-display">${formatDateLabel(selectedDay)}</span>
+          <input class="tp-date-input" type="date" value="${formatDateInput(selectedDay)}" />
+        </label>
       </div>
       <div class="tp-preview"></div>
       <div class="tp-actions">
@@ -1239,7 +1228,6 @@
     const offsetInput = modal.querySelector(".tp-offset");
     const dateInput = modal.querySelector(".tp-date-input");
     const dateDisplay = modal.querySelector(".tp-date-display");
-    const todayBtn = modal.querySelector(".tp-today-btn");
     const preview = modal.querySelector(".tp-preview");
 
     function formatDateLabel(ts) {
@@ -1287,13 +1275,6 @@
         const [y, mo, d] = dateInput.value.split("-").map(Number);
         selectedDay = new Date(y, mo - 1, d).getTime();
       }
-      dateDisplay.textContent = formatDateLabel(selectedDay);
-      updatePreview();
-    };
-
-    todayBtn.onclick = () => {
-      selectedDay = startOfDay(Date.now());
-      dateInput.value = formatDateInput(selectedDay);
       dateDisplay.textContent = formatDateLabel(selectedDay);
       updatePreview();
     };
