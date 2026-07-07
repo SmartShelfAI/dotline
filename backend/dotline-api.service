@@ -1,0 +1,16 @@
+[Unit]
+Description=Dotline notes API (Flask/gunicorn)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/dotline
+EnvironmentFile=/opt/dotline/dotline.env
+ExecStart=/usr/bin/gunicorn --workers 2 --bind 127.0.0.1:5015 --timeout 30 app:app
+Restart=on-failure
+RestartSec=3
+User=root
+
+[Install]
+WantedBy=multi-user.target

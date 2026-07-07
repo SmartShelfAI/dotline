@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+
+# Backup files
+*.bak
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Env / secrets
+.env
+backend/dotline.env
+
+# SQLite (if created locally)
+*.db
+
+# Node / build artifacts (if any)
+node_modules/
+dist/
+me.jpg

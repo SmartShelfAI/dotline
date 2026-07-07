@@ -1,0 +1,1591 @@
+<style>
+  :root {
+    --bg: #EBEEF2;
+    --surface: #FFFFFF;
+    --surface-2: #F4F6F9;
+    --ink: #1A1F27;
+    --muted: #5B6672;
+    --faint: #9AA4B0;
+    --hairline: #DCE1E8;
+    --line: #128074;
+    --line-strong: #0C6B61;
+    --line-soft: rgba(18, 128, 116, 0.14);
+    --danger: #C24B3A;
+    --shadow: 0 1px 2px rgba(20, 28, 38, .06), 0 8px 24px rgba(20, 28, 38, .07);
+    --radius: 16px;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12161B;
+      --surface: #1B212A;
+      --surface-2: #222A34;
+      --ink: #E7ECF2;
+      --muted: #94A0AD;
+      --faint: #5F6C7A;
+      --hairline: #2A323D;
+      --line: #29A99B;
+      --line-strong: #34C0B0;
+      --line-soft: rgba(41, 169, 155, 0.16);
+      --danger: #E06A55;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #EBEEF2; --surface: #FFFFFF; --surface-2: #F4F6F9; --ink: #1A1F27;
+    --muted: #5B6672; --faint: #9AA4B0; --hairline: #DCE1E8; --line: #128074;
+    --line-strong: #0C6B61; --line-soft: rgba(18,128,116,.14); --danger: #C24B3A;
+    --shadow: 0 1px 2px rgba(20,28,38,.06), 0 8px 24px rgba(20,28,38,.07);
+  }
+  :root[data-theme="dark"] {
+    --bg: #12161B; --surface: #1B212A; --surface-2: #222A34; --ink: #E7ECF2;
+    --muted: #94A0AD; --faint: #5F6C7A; --hairline: #2A323D; --line: #29A99B;
+    --line-strong: #34C0B0; --line-soft: rgba(41,169,155,.16); --danger: #E06A55;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+  .app {
+    max-width: 940px;
+    margin: 0 auto;
+    padding: 28px 20px 96px;
+    min-height: 100%;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 26px;
+  }
+  .icon-btn {
+    appearance: none;
+    border: 1px solid var(--hairline);
+    background: var(--surface);
+    color: var(--muted);
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    transition: color .15s, border-color .15s, transform .1s;
+  }
+  .icon-btn:hover { color: var(--ink); border-color: var(--faint); }
+  .icon-btn:active { transform: scale(.94); }
+
+  /* ---------- auth ---------- */
+  .top-actions { display: flex; align-items: center; gap: 10px; }
+  .auth-btn {
+    appearance: none;
+    border: 1px solid var(--hairline); background: var(--surface); color: var(--ink);
+    height: 38px; padding: 0 16px; border-radius: 10px; cursor: pointer;
+    font-size: 13.5px; font-weight: 550;
+    transition: border-color .15s, color .15s;
+  }
+  .auth-btn:hover { border-color: var(--line); color: var(--line); }
+  .user-wrap { position: relative; }
+  .avatar-btn {
+    appearance: none;
+    display: flex; align-items: center; gap: 8px;
+    height: 38px; padding: 3px 12px 3px 4px;
+    border: 1px solid var(--hairline); background: var(--surface); color: var(--ink);
+    border-radius: 20px; cursor: pointer; font-size: 13.5px; font-weight: 550;
+    max-width: 220px; transition: border-color .15s;
+  }
+  .avatar-btn:hover { border-color: var(--faint); }
+  .avatar-btn img { width: 30px; height: 30px; border-radius: 50%; flex: none; background: var(--surface-2); }
+  .avatar-btn .who { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .avatar-fallback {
+    width: 30px; height: 30px; border-radius: 50%; flex: none;
+    background: var(--line); color: #fff; display: grid; place-items: center;
+    font-size: 13px; font-weight: 600;
+  }
+  .pop {
+    position: absolute; right: 0; top: 46px; z-index: 60;
+    background: var(--surface); border: 1px solid var(--hairline);
+    border-radius: 12px; box-shadow: var(--shadow); padding: 6px; min-width: 190px;
+    animation: fade .16s ease;
+  }
+  .pop .email {
+    padding: 8px 10px 9px; color: var(--muted); font-size: 12px;
+    border-bottom: 1px solid var(--hairline); margin-bottom: 4px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .pop button {
+    width: 100%; text-align: left; border: none; background: transparent; color: var(--ink);
+    padding: 9px 10px; border-radius: 8px; cursor: pointer; font-size: 13.5px;
+  }
+  .pop button:hover { background: var(--surface-2); }
+  .gpanel {
+    position: absolute; right: 0; top: 46px; z-index: 60;
+    background: var(--surface); border: 1px solid var(--hairline);
+    border-radius: 12px; box-shadow: var(--shadow); padding: 16px;
+    animation: fade .16s ease;
+  }
+  .gpanel .ghint { font-size: 12.5px; color: var(--muted); margin-bottom: 12px; max-width: 240px; line-height: 1.45; }
+  .gbtn-holder { min-height: 40px; display: flex; justify-content: center; }
+  .sync-dot {
+    display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--line); margin-right: 7px; vertical-align: middle;
+    opacity: 0; transition: opacity .2s;
+  }
+  .sync-dot.on { opacity: 1; }
+
+  /* ---------- home grid ---------- */
+  .screen-head { margin-bottom: 18px; }
+  .screen-head h1 {
+    font-size: 26px; font-weight: 640; letter-spacing: -0.02em;
+    margin: 0 0 4px;
+  }
+  .screen-head p { margin: 0; color: var(--muted); font-size: 14px; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius);
+    padding: 18px;
+    cursor: pointer;
+    min-height: 168px;
+    display: flex; flex-direction: column;
+    text-align: left;
+    box-shadow: var(--shadow);
+    transition: transform .12s, border-color .15s, box-shadow .2s;
+    position: relative;
+  }
+  .card:hover { transform: translateY(-2px); border-color: var(--line); }
+  .card:focus-visible { outline: 2px solid var(--line); outline-offset: 2px; }
+  .card .title {
+    font-weight: 600; font-size: 15.5px; letter-spacing: -0.01em;
+    margin-bottom: 3px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .card .meta {
+    font-family: var(--mono); font-size: 11px; color: var(--faint);
+    letter-spacing: .03em; text-transform: uppercase;
+  }
+  .card .mini { margin-top: auto; padding-top: 14px; }
+  .card .card-del {
+    position: absolute; top: 8px; right: 8px;
+    width: 32px; height: 32px; border-radius: 10px;
+    border: none; background: transparent; color: var(--faint);
+    cursor: pointer; opacity: 0; transition: opacity .12s, color .12s, background .12s;
+    display: inline-flex; align-items: center; justify-content: center; font-size: 16px;
+  }
+  .card:hover .card-del { opacity: 1; }
+  .card-del:hover { color: var(--danger); background: var(--surface-2); }
+  /* on touch devices there is no hover, so keep the delete button visible */
+  @media (hover: none) {
+    .card .card-del { opacity: 1; color: var(--muted); }
+  }
+
+  .card.add {
+    align-items: center; justify-content: center;
+    border-style: dashed; border-color: var(--faint);
+    background: transparent; box-shadow: none; color: var(--muted);
+    gap: 10px;
+  }
+  .card.add:hover { border-color: var(--line); color: var(--line); }
+  .card.add .plus {
+    width: 46px; height: 46px; border-radius: 50%;
+    border: 2px solid currentColor;
+    display: grid; place-items: center; font-size: 26px; font-weight: 300;
+    line-height: 1;
+  }
+  .card.add .add-label { font-size: 13px; font-weight: 550; }
+
+  /* ---------- note editor ---------- */
+  .editor-head {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 22px;
+  }
+  .back-btn {
+    appearance: none; border: 1px solid var(--hairline); background: var(--surface);
+    color: var(--muted); border-radius: 10px; height: 38px; padding: 0 14px 0 11px;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13.5px; font-weight: 550; transition: color .15s, border-color .15s;
+  }
+  .back-btn:hover { color: var(--ink); border-color: var(--faint); }
+  .note-title {
+    font-size: 22px; font-weight: 640; letter-spacing: -0.02em;
+    border: none; background: transparent; color: var(--ink);
+    outline: none; flex: 1; min-width: 0; padding: 4px 6px;
+    border-radius: 8px;
+    resize: none; overflow: hidden; line-height: 1.25;
+    white-space: pre-wrap; word-wrap: break-word;
+    field-sizing: content;
+  }
+  .note-title:focus { background: var(--surface-2); }
+  .note-title::placeholder { color: var(--faint); }
+
+  .board {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 30px 24px 34px;
+  }
+  @media (max-width: 420px) {
+    .board { padding: 22px 16px 26px; }
+    .note-title { font-size: 20px; }
+  }
+
+  /* centered vertical line with stations — dot is always at 50% of the board */
+  .spine { --dot: 34px; position: relative; }
+  .node, .link { position: relative; }
+
+  /* rail runs vertically through the exact horizontal center */
+  .node::before, .link::before {
+    content: "";
+    position: absolute;
+    left: 50%; transform: translateX(-50%);
+    width: 3px; background: var(--line);
+    top: 0; bottom: 0;
+    z-index: 0;
+  }
+  .spine > .node:first-of-type::before { top: 50%; }
+  .node.ghost::before { display: none; }
+
+  /* SVG overlay used only while dragging a dot to draw the stressed string */
+  .spine-wire {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    overflow: visible;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .spine-wire path {
+    fill: none;
+    stroke: var(--line);
+    stroke-width: 3;
+    stroke-linecap: round;
+    transition: stroke .15s, opacity .2s;
+  }
+  .spine-wire path.snapping { opacity: 0; }
+
+  /* grid keeps the dot dead-centre while the label lives in the LEFT column
+     and wraps freely (no truncation) — the row grows and the line lengthens */
+  .node {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 14px;
+    min-height: var(--dot);
+    padding: 5px 0;
+    transition: transform .18s cubic-bezier(.2,.8,.2,1), opacity .2s;
+    touch-action: pan-y;
+  }
+  .node.dragging { transition: none; }
+  .node.wire-hidden::before, .link.wire-hidden::before { opacity: 0; }
+  .node.removing { opacity: 0; transform: translateX(var(--snap-dx, 120px)) scale(.9); }
+  .node.snap-back { transition: transform .22s cubic-bezier(.2,.8,.2,1); transform: none; }
+  .dot {
+    grid-column: 2;
+    position: relative; z-index: 2;
+    width: var(--dot); height: var(--dot);
+    border-radius: 50%;
+    background: var(--surface);
+    border: 3px solid var(--line);
+    cursor: pointer; padding: 0;
+    transition: transform .12s, background .15s, border-color .15s, box-shadow .15s;
+  }
+  .dot:hover { box-shadow: 0 0 0 6px var(--line-soft); }
+  .dot:active { transform: scale(.9); }
+  .dot:focus-visible { outline: 2px solid var(--line); outline-offset: 3px; }
+  .node.done .dot { background: var(--ink); border-color: var(--ink); }
+
+  /* reverse anchor arrow: upward arrow below the first dot */
+  .spine.reverse > .node:first-of-type .dot::after {
+    content: "";
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 7px solid var(--line);
+    pointer-events: none;
+  }
+
+  /* analog clock hands inside reverse dots (div-based, reliable rotation) */
+  .clock-hand, .clock-cap {
+    position: absolute;
+    left: 50%;
+    pointer-events: none;
+    z-index: 3;
+  }
+  .clock-hand {
+    bottom: 50%;
+    width: 2.5px;
+    border-radius: 999px;
+    background: var(--line);
+    transform-origin: bottom center;
+    transform: translateX(-50%) rotate(0deg);
+    transition: transform .2s;
+  }
+  .clock-hand.hour { height: 24%; width: 3px; }
+  .clock-hand.minute { height: 34%; }
+  .clock-cap {
+    top: 50%;
+    width: 4.5px; height: 4.5px;
+    border-radius: 50%;
+    background: var(--line);
+    transform: translate(-50%, -50%);
+  }
+  .node.done .clock-hand, .node.done .clock-cap { background: var(--surface); }
+
+  /* alias: small editable number/name to the LEFT of the dot */
+  .node-alias {
+    grid-column: 1;
+    justify-self: end;
+    text-align: right;
+    max-width: 100%;
+    outline: none;
+    font-size: 12px; font-weight: 500; color: var(--ink);
+    font-family: var(--mono); font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    line-height: 1.35;
+    padding: 2px 6px; border-radius: 8px;
+    cursor: text;
+    overflow-wrap: anywhere;
+    transition: background .12s, color .12s;
+    user-select: text; -webkit-user-select: text;
+  }
+  .node-alias:hover, .node-alias:focus { background: var(--surface-2); }
+  .node-alias.is-auto { color: var(--faint); }
+  .node.done .node-alias { color: var(--faint); text-decoration: line-through; }
+  .node-alias:empty::before { content: attr(data-ph); color: var(--faint); font-weight: 400; }
+
+  /* label: main item name to the RIGHT of the dot */
+  .node-label {
+    grid-column: 3;
+    justify-self: start;
+    text-align: left;
+    max-width: 100%;
+    outline: none;
+    font-size: 16px; font-weight: 500; color: var(--ink);
+    letter-spacing: -0.01em;
+    line-height: 1.35;
+    padding: 3px 7px; border-radius: 8px;
+    cursor: text;
+    overflow-wrap: anywhere;
+    transition: background .12s, color .12s;
+    user-select: text; -webkit-user-select: text;
+  }
+  .node-label:hover, .node-label:focus { background: var(--surface-2); }
+  .node-label.is-hint { color: var(--faint); }
+  .node.done .node-label { color: var(--faint); text-decoration: line-through; }
+  .node-label:empty::before { content: attr(data-ph); color: var(--faint); font-weight: 400; }
+
+  /* connector label is a pill centered ON the line */
+  .link {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 88px;
+  }
+  .link-label {
+    position: relative; z-index: 2;
+    outline: none;
+    font-size: 13px; color: var(--muted);
+    background: var(--surface);
+    padding: 4px 12px; border-radius: 14px;
+    border: 1px solid transparent;
+    cursor: text;
+    max-width: 78%;
+    text-align: center; line-height: 1.35;
+    overflow-wrap: anywhere;
+    transition: border-color .12s, color .12s;
+  }
+  .link-label:hover, .link-label:focus { border-color: var(--line); color: var(--ink); }
+  .link-label.interval { cursor: pointer; }
+  .link-label:empty::before { content: attr(data-ph); color: var(--faint); }
+
+  /* ghost add-node at the very bottom: dashed line + dashed grey circle */
+  .link.ghost::before {
+    background: repeating-linear-gradient(var(--faint) 0 5px, transparent 5px 11px);
+    width: 2px;
+  }
+  .node.ghost { display: flex; align-items: center; justify-content: center; position: relative; }
+  .add-dot {
+    position: relative; z-index: 2;
+    width: var(--dot); height: var(--dot); border-radius: 50%;
+    background: transparent; border: 2px dashed var(--faint);
+    color: var(--faint); cursor: pointer; padding: 0;
+    display: grid; place-items: center; font-size: 17px; line-height: 1;
+    transition: border-color .15s, color .15s, transform .12s;
+  }
+  .add-dot:hover { border-color: var(--line); color: var(--line); transform: scale(1.08); }
+  .add-dot:focus-visible { outline: 2px solid var(--line); outline-offset: 3px; }
+  .ghost-hint {
+    position: absolute; left: calc(50% + 22px);
+    font-size: 12px; color: var(--faint); white-space: nowrap;
+    opacity: 0; transition: opacity .12s; pointer-events: none;
+  }
+  .node.ghost:hover .ghost-hint { opacity: 1; }
+
+  .empty { text-align: center; color: var(--muted); padding: 60px 20px; }
+
+  /* mini preview on cards */
+  .mini svg { display: block; overflow: visible; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+  .fade-in { animation: fade .25s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+  /* time picker modal */
+  .tp-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,.35);
+    display: grid; place-items: center; padding: 18px;
+    animation: tp-fade .15s ease;
+  }
+  .tp-modal {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 18px;
+    padding: 22px;
+    width: 100%; max-width: 360px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    animation: tp-pop .18s ease;
+  }
+  @keyframes tp-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes tp-pop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+  .tp-title { font-size: 18px; font-weight: 640; margin-bottom: 18px; }
+  .tp-field { margin-bottom: 16px; }
+  .tp-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+  .tp-time {
+    width: 100%; height: 44px; font-size: 18px; font-family: var(--mono);
+    border: 1px solid var(--hairline); border-radius: 10px;
+    padding: 0 10px; background: var(--surface-2); color: var(--ink);
+  }
+  .tp-slider { width: 100%; accent-color: var(--line); }
+  .tp-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .tp-offset { width: 90px; height: 36px; font-size: 15px; font-family: var(--mono);
+    border: 1px solid var(--hairline); border-radius: 8px; padding: 0 8px;
+    background: var(--surface-2); color: var(--ink); }
+  .tp-date-button {
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    height: 44px; border: 1px solid var(--hairline); border-radius: 10px;
+    background: var(--surface-2); color: var(--ink);
+    font-size: 15px; cursor: pointer; overflow: hidden;
+  }
+  .tp-date-input {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    opacity: 0; cursor: pointer; border: none; padding: 0; margin: 0;
+  }
+  .tp-preview {
+    background: var(--surface-2); border-radius: 12px;
+    padding: 16px; text-align: center; font-size: 16px; color: var(--muted);
+    margin: 8px 0 20px;
+  }
+  .tp-preview strong { display: block; color: var(--ink); font-size: 24px; margin-bottom: 5px; }
+  .tp-actions { display: flex; gap: 10px; }
+  .tp-actions .tp-btn { flex: 1; height: 42px; border-radius: 10px; border: 1px solid var(--hairline);
+    background: var(--surface-2); color: var(--ink); font-size: 15px; cursor: pointer; }
+  .tp-actions .tp-btn.primary { background: var(--line); color: #fff; border-color: var(--line); }
+</style>
+
+<div class="app">
+  <div class="topbar">
+    <div class="top-actions">
+      <div id="authSlot"></div>
+      <button class="icon-btn" id="themeBtn" title="Theme" aria-label="Toggle theme">◐</button>
+    </div>
+  </div>
+  <div id="view"></div>
+</div>
+
+<script>
+(function () {
+  const STORE = "dotline.v1";
+  const $view = document.getElementById("view");
+
+  // ---------- state ----------
+  let db = load();
+  function load() {
+    try {
+      let raw = JSON.parse(localStorage.getItem(STORE));
+      if (raw && Array.isArray(raw.notes)) {
+        migrateReverseTimes(raw.notes);
+        return raw;
+      }
+      // migrate from the old "throughline.v1" key so existing notes survive the rename
+      const old = JSON.parse(localStorage.getItem("throughline.v1"));
+      if (old && Array.isArray(old.notes)) {
+        migrateReverseTimes(old.notes);
+        localStorage.setItem(STORE, JSON.stringify(old));
+        return old;
+      }
+    } catch (e) {}
+    // seed with one example note
+    return {
+      notes: [{
+        id: uid(), title: "Morning routine",
+        nodes: [
+          { id: uid(), name: "Wake up" },
+          { id: uid(), name: "" },
+          { id: uid(), name: "Coffee" }
+        ],
+        links: [ { label: "no snooze" }, { label: "" } ]
+      }]
+    };
+  }
+  // older reverse notes stored time as minutes-of-day and duration as minutes
+  function migrateReverseTimes(notes) {
+    notes.forEach(n => {
+      if (n.type !== "reverse" || !Array.isArray(n.nodes) || !n.nodes.length) return;
+      const today = startOfDay(Date.now());
+      n.nodes.forEach(node => {
+        if (typeof node.time === "number" && node.time >= 0 && node.time < 1440) {
+          node.time = today + node.time * 60000;
+        }
+      });
+      if (n.links) {
+        n.links.forEach(link => {
+          if (typeof link.duration === "number" && Math.abs(link.duration) < 1440) {
+            link.duration = link.duration * 60000;
+          }
+        });
+      }
+    });
+  }
+  function save() {
+    localStorage.setItem(STORE, JSON.stringify(db));
+    if (auth.user) schedulePush();
+  }
+  function uid() { return Math.random().toString(36).slice(2, 9); }
+
+  // ---------- server sync ----------
+  const API = "/notes/api";
+  const auth = { user: null, clientId: "" };
+  let pushTimer = null;
+
+  async function api(method, path, body) {
+    const r = await fetch(API + path, {
+      method,
+      credentials: "include",
+      headers: body ? { "Content-Type": "application/json" } : {},
+      body: body ? JSON.stringify(body) : undefined
+    });
+    if (!r.ok) { const e = new Error("http " + r.status); e.status = r.status; throw e; }
+    return r.status === 204 ? null : r.json();
+  }
+
+  function schedulePush() {
+    setSync(true);
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(async () => {
+      try { await api("PUT", "/notes", { notes: db.notes }); } catch (e) {}
+      setSync(false);
+    }, 700);
+  }
+  function setSync(on) {
+    const d = document.getElementById("syncDot");
+    if (d) d.classList.toggle("on", on);
+  }
+
+  // ---------- routing ----------
+  let route = { name: "home", noteId: null };
+  function go(name, noteId) { route = { name, noteId: noteId || null }; render(); }
+
+  function render() {
+    if (route.name === "note") renderNote(db.notes.find(n => n.id === route.noteId));
+    else renderHome();
+  }
+
+  // ---------- home ----------
+  function renderHome() {
+    const el = document.createElement("div");
+    el.innerHTML = `
+      <div class="screen-head">
+        <h1>Free Dotline</h1>
+        <p>Each note is one line of connected points.</p>
+      </div>
+      <div class="grid" id="grid"></div>
+      <div class="screen-head" style="margin-top: 34px;">
+        <h1>Reverse Timing Dotline</h1>
+        <p>Events counted from the first: time on the left, name on the right.</p>
+      </div>
+      <div class="grid" id="reverseGrid"></div>`;
+    const freeGrid = el.querySelector("#grid");
+    const reverseGrid = el.querySelector("#reverseGrid");
+
+    const freeAdd = document.createElement("button");
+    freeAdd.className = "card add";
+    freeAdd.innerHTML = `<span class="plus">+</span><span class="add-label">New dot-line</span>`;
+    freeAdd.onclick = newNote;
+    freeGrid.appendChild(freeAdd);
+
+    const reverseAdd = document.createElement("button");
+    reverseAdd.className = "card add";
+    reverseAdd.innerHTML = `<span class="plus">+</span><span class="add-label">New event</span>`;
+    reverseAdd.onclick = newReverseNote;
+    reverseGrid.appendChild(reverseAdd);
+
+    db.notes.forEach(n => {
+      if (n.type === "reverse") reverseGrid.appendChild(cardFor(n));
+      else freeGrid.appendChild(cardFor(n));
+    });
+    swap(el);
+  }
+
+  function cardFor(n) {
+    const c = document.createElement("button");
+    c.className = "card";
+    const count = n.nodes.length;
+    const isReverse = n.type === "reverse";
+    c.innerHTML = `
+      <button class="card-del" title="Delete" aria-label="Delete">✕</button>
+      <div class="title">${escapeHtml(n.title || "Untitled")}</div>
+      <div class="meta">${count} ${isReverse ? pluralEvent(count) : plural(count)}</div>
+      <div class="mini">${miniSvg(n)}</div>`;
+    c.onclick = () => go("note", n.id);
+    c.querySelector(".card-del").onclick = (e) => {
+      e.stopPropagation();
+      if (confirm("Delete note \"" + (n.title || "Untitled") + "\"?")) {
+        db.notes = db.notes.filter(x => x.id !== n.id); save(); renderHome();
+      }
+    };
+    return c;
+  }
+
+  function miniSvg(n) {
+    const shown = Math.min(n.nodes.length, 4);
+    const gap = 26, top = 6, x = 11, r = 6;
+    const h = top + (shown - 1) * gap + 8;
+    let s = `<svg width="100%" height="${h}" viewBox="0 0 160 ${h}">`;
+    const y0 = top + 2, y1 = top + (shown - 1) * gap + 2;
+    s += `<line x1="${x}" y1="${y0}" x2="${x}" y2="${y1}" stroke="var(--line)" stroke-width="2.5"/>`;
+    for (let i = 0; i < shown; i++) {
+      const cy = top + i * gap + 2;
+      const done = n.nodes[i].done;
+      s += `<circle cx="${x}" cy="${cy}" r="${r}" fill="${done ? 'var(--ink)' : 'var(--surface)'}" stroke="${done ? 'var(--ink)' : 'var(--line)'}" stroke-width="2.5"/>`;
+      const label = n.type === "reverse"
+        ? (n.nodes[i].name || formatTime(n.nodes[i].time, startOfDay(n.nodes[0].time)) || String(i + 1))
+        : (n.nodes[i].name || n.nodes[i].alias || String(i + 1));
+      s += `<text x="${x + 14}" y="${cy + 4}" font-family="var(--mono)" font-size="11" fill="var(--faint)">${escapeHtml(trunc(label, 16))}</text>`;
+    }
+    if (n.nodes.length > shown) {
+      s += `<text x="${x - 3}" y="${y1 + 16}" font-family="var(--mono)" font-size="11" fill="var(--faint)">+${n.nodes.length - shown}</text>`;
+    }
+    s += `</svg>`;
+    return s;
+  }
+
+  function newNote() {
+    const n = {
+      id: uid(),
+      type: "free",
+      title: "Dot note " + (db.notes.filter(x => x.type !== "reverse").length + 1),
+      autoTitle: true,
+      nodes: [ { id: uid(), name: "" } ],
+      links: []
+    };
+    db.notes.unshift(n); save(); go("note", n.id);
+  }
+
+  function newReverseNote() {
+    const idx = db.notes.filter(x => x.type === "reverse").length + 1;
+    const n = {
+      id: uid(),
+      type: "reverse",
+      title: "Reverse " + idx,
+      autoTitle: true,
+      nodes: [ { id: uid(), name: "", time: Date.now() } ],
+      links: []
+    };
+    db.notes.unshift(n); save(); go("note", n.id);
+  }
+
+  // ---------- note editor ----------
+  function renderNote(n) {
+    if (!n) { go("home"); return; }
+    if (n.type === "reverse") { renderReverseNote(n); return; }
+    const el = document.createElement("div");
+    el.innerHTML = `
+      <div class="editor-head">
+        <button class="back-btn">‹ Notes</button>
+        <textarea class="note-title" placeholder="Note title" rows="1"></textarea>
+      </div>
+      <div class="board"><div class="spine free" id="spine"></div></div>`;
+    el.querySelector(".back-btn").onclick = () => go("home");
+    const title = el.querySelector(".note-title");
+    title.value = n.title || "";
+    title.oninput = () => { n.title = title.value; n.autoTitle = false; save(); autoResize(title); };
+    // auto-generated title clears on focus so the user never types over "Dot note N"
+    title.onfocus = () => {
+      if (n.autoTitle) { n.title = ""; title.value = ""; n.autoTitle = false; autoResize(title); }
+    };
+    title.onblur = () => {
+      if (!title.value.trim()) {
+        const idx = db.notes.filter(x => x.type !== "reverse").findIndex(x => x.id === n.id) + 1;
+        n.title = "Dot note " + idx;
+        n.autoTitle = true;
+        title.value = n.title;
+        save();
+        autoResize(title);
+      }
+    };
+
+    const spine = el.querySelector("#spine");
+
+    swap(el);
+    drawSpine(spine, n);
+    autoResize(title);
+    if (n.autoTitle) setTimeout(() => title.focus(), 0);
+  }
+
+  function renderReverseNote(n) {
+    if (!n) { go("home"); return; }
+    const el = document.createElement("div");
+    el.innerHTML = `
+      <div class="editor-head">
+        <button class="back-btn">‹ Notes</button>
+        <textarea class="note-title" placeholder="Timeline title" rows="1"></textarea>
+      </div>
+      <div class="board"><div class="spine reverse" id="spine"></div></div>`;
+    el.querySelector(".back-btn").onclick = () => go("home");
+    const title = el.querySelector(".note-title");
+    title.value = n.title || "";
+    title.oninput = () => { n.title = title.value; n.autoTitle = false; save(); autoResize(title); };
+    title.onfocus = () => {
+      if (n.autoTitle) { n.title = ""; title.value = ""; n.autoTitle = false; autoResize(title); }
+    };
+    title.onblur = () => {
+      if (!title.value.trim()) {
+        const idx = db.notes.filter(x => x.type === "reverse").findIndex(x => x.id === n.id) + 1;
+        n.title = "Reverse " + idx;
+        n.autoTitle = true;
+        title.value = n.title;
+        save();
+        autoResize(title);
+      }
+    };
+
+    const spine = el.querySelector("#spine");
+
+    swap(el);
+    drawReverseSpine(spine, n);
+    autoResize(title);
+    if (n.autoTitle) setTimeout(() => title.focus(), 0);
+  }
+
+  function autoResize(ta) {
+    ta.style.height = "auto";
+    ta.style.height = ta.scrollHeight + "px";
+  }
+
+  function drawSpine(spine, n, focusIndex) {
+    spine.innerHTML = "";
+    const wire = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    wire.classList.add("spine-wire");
+    spine.appendChild(wire);
+
+    n.nodes.forEach((node, i) => {
+      spine.appendChild(nodeRow(n, node, i, spine));
+      if (i < n.nodes.length - 1) spine.appendChild(linkRow(n, i));
+    });
+    spine.appendChild(ghostRow(n, spine));
+    if (focusIndex != null) {
+      const labels = spine.querySelectorAll(".node-label");
+      const t = labels[focusIndex];
+      if (t) { t.classList.add("fade-in"); placeCaretEnd(t); }
+    }
+  }
+
+  // ghost affordance: dashed connector + dashed grey circle that appends a real node
+  function ghostRow(n, spine) {
+    const frag = document.createDocumentFragment();
+    const link = document.createElement("div");
+    link.className = "link ghost";
+    const row = document.createElement("div");
+    row.className = "node ghost";
+    const add = document.createElement("button");
+    add.className = "add-dot"; add.textContent = "+";
+    add.title = "Add item"; add.setAttribute("aria-label", "Add item");
+    const hint = document.createElement("span");
+    hint.className = "ghost-hint"; hint.textContent = "add item";
+    const doAdd = () => { addNodeAt(n, n.nodes.length - 1); save(); drawSpine(spine, n, n.nodes.length - 1); };
+    add.onclick = doAdd;
+    row.append(add, hint);
+    frag.append(link, row);
+    return frag;
+  }
+
+  function nodeRow(n, node, i, spine) {
+    const row = document.createElement("div");
+    row.className = "node" + (node.done ? " done" : "");
+    row.dataset.index = i;
+
+    const alias = document.createElement("div");
+    alias.className = "node-alias";
+    alias.contentEditable = "true";
+    alias.spellcheck = false;
+    alias.setAttribute("data-ph", String(i + 1));
+    setAliasDisplay(alias, node, i);
+
+    alias.onfocus = () => {
+      if (alias.classList.contains("is-auto")) {
+        alias.textContent = ""; alias.classList.remove("is-auto");
+      }
+    };
+    alias.oninput = () => { node.alias = alias.textContent.trim(); save(); };
+    alias.onblur = () => { node.alias = alias.textContent.trim(); setAliasDisplay(alias, node, i); save(); };
+    alias.onkeydown = (e) => {
+      if (e.key === "Enter") { e.preventDefault(); alias.blur(); }
+    };
+
+    const dot = document.createElement("button");
+    dot.className = "dot";
+    dot.title = "Toggle done. Drag sideways to delete";
+    dot.setAttribute("aria-label", "Toggle done");
+
+    const label = document.createElement("div");
+    label.className = "node-label";
+    label.contentEditable = "true";
+    label.spellcheck = false;
+    label.setAttribute("data-ph", "item name");
+    setNameDisplay(label, node);
+
+    label.onfocus = () => {
+      if (label.classList.contains("is-hint")) {
+        label.textContent = ""; label.classList.remove("is-hint");
+        setTimeout(() => placeCaretEnd(label), 0);
+      }
+    };
+    label.oninput = () => { node.name = label.textContent.trim(); save(); };
+    label.onblur = () => { node.name = label.textContent.trim(); setNameDisplay(label, node); save(); };
+    label.onkeydown = (e) => {
+      if (e.key === "Enter") { e.preventDefault(); addNodeAt(n, i); save(); drawSpine(spine, n, i + 1); }
+    };
+
+    // swipe-to-delete on the dot: pull sideways like plucking a string
+    bindDotDrag(dot, row, n, node, i, spine);
+
+    row.append(alias, dot, label);
+    return row;
+  }
+
+  function setAliasDisplay(alias, node, i) {
+    alias.classList.remove("is-auto");
+    if (node.alias && node.alias.length) {
+      alias.textContent = node.alias;
+    } else {
+      alias.textContent = String(i + 1);
+      alias.classList.add("is-auto");
+    }
+  }
+
+  function setNameDisplay(label, node) {
+    label.classList.remove("is-hint");
+    if (node.name && node.name.length) {
+      label.textContent = node.name;
+    } else {
+      label.textContent = "item name";
+      label.classList.add("is-hint");
+    }
+  }
+
+  function linkRow(n, i) {
+    const row = document.createElement("div");
+    row.className = "link";
+    const lab = document.createElement("div");
+    lab.className = "link-label";
+    lab.contentEditable = "true";
+    lab.spellcheck = false;
+    lab.setAttribute("data-ph", "link note");
+    lab.textContent = (n.links[i] && n.links[i].label) || "";
+    lab.oninput = () => { ensureLink(n, i).label = lab.textContent.trim(); save(); };
+    row.appendChild(lab);
+    return row;
+  }
+  function ensureLink(n, i) { if (!n.links[i]) n.links[i] = { label: "" }; return n.links[i]; }
+
+  function addNodeAt(n, i) {
+    n.nodes.splice(i + 1, 0, { id: uid(), name: "" });
+    n.links.splice(i, 0, { label: "" });
+  }
+
+  // ---------- reverse timeline ----------
+  function drawReverseSpine(spine, n, focusIndex) {
+    spine.innerHTML = "";
+    const wire = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    wire.classList.add("spine-wire");
+    spine.appendChild(wire);
+    updateReverseTimes(n);
+    n.nodes.forEach((node, i) => {
+      spine.appendChild(reverseNodeRow(n, node, i, spine));
+      if (i < n.nodes.length - 1) spine.appendChild(reverseLinkRow(n, i, spine));
+    });
+    spine.appendChild(reverseGhostRow(n, spine));
+    if (focusIndex != null) {
+      const labels = spine.querySelectorAll(".node-label");
+      const t = labels[focusIndex];
+      if (t) { t.classList.add("fade-in"); placeCaretEnd(t); }
+    }
+  }
+
+  function reverseNodeRow(n, node, i, spine) {
+    const row = document.createElement("div");
+    row.className = "node" + (node.done ? " done" : "");
+    row.dataset.index = i;
+
+    const anchorDay = startOfDay(n.nodes[0].time);
+    const alias = document.createElement("div");
+    alias.className = "node-alias is-auto";
+    alias.textContent = formatTime(node.time, anchorDay);
+    alias.onclick = () => {
+      openTimePicker({
+        anchorTime: n.nodes[0].time,
+        previousTime: i > 0 ? n.nodes[i - 1].time : n.nodes[0].time,
+        currentTime: node.time,
+        onApply: (baseTime, duration) => {
+          node.time = baseTime;
+          if (i > 0 && n.links[i - 1]) n.links[i - 1].duration = duration;
+          updateReverseTimes(n);
+          save();
+          drawReverseSpine(spine, n);
+        }
+      });
+    };
+    alias.title = "Click to edit time";
+
+    const dot = document.createElement("button");
+    dot.className = "dot";
+    dot.title = "Toggle done. Drag sideways to delete";
+    dot.setAttribute("aria-label", "Toggle done");
+
+    // analog clock face inside the dot (reverse timeline only)
+    const hourHand = document.createElement("div");
+    hourHand.className = "clock-hand hour";
+    const minuteHand = document.createElement("div");
+    minuteHand.className = "clock-hand minute";
+    const cap = document.createElement("div");
+    cap.className = "clock-cap";
+    dot.append(hourHand, minuteHand, cap);
+    setClockHands(dot, node.time);
+
+    const label = document.createElement("div");
+    label.className = "node-label";
+    label.contentEditable = "true";
+    label.spellcheck = false;
+    label.setAttribute("data-ph", "event");
+    setNameDisplay(label, node);
+
+    label.onfocus = () => {
+      if (label.classList.contains("is-hint")) {
+        label.textContent = ""; label.classList.remove("is-hint");
+        setTimeout(() => placeCaretEnd(label), 0);
+      }
+    };
+    label.oninput = () => { node.name = label.textContent.trim(); save(); };
+    label.onblur = () => { node.name = label.textContent.trim(); setNameDisplay(label, node); save(); };
+    label.onkeydown = (e) => {
+      if (e.key === "Enter") { e.preventDefault(); addReverseNodeAt(n, i); save(); drawReverseSpine(spine, n, i + 1); }
+    };
+
+    bindDotDrag(dot, row, n, node, i, spine, {
+      draw: drawReverseSpine,
+      onDelete: (i) => {
+        if (n.nodes.length <= 1) return;
+        if (i > 0 && i < n.links.length) {
+          n.links[i-1].duration = (n.links[i-1].duration || 0) + (n.links[i].duration || 0);
+        }
+        n.nodes.splice(i, 1);
+        n.links.splice(Math.min(i, n.links.length - 1), 1);
+        updateReverseTimes(n);
+        save();
+      }
+    });
+
+    row.append(alias, dot, label);
+    return row;
+  }
+
+  function reverseLinkRow(n, i, spine) {
+    const row = document.createElement("div");
+    row.className = "link";
+    const lab = document.createElement("div");
+    lab.className = "link-label interval";
+    lab.setAttribute("data-ph", "interval");
+    lab.textContent = formatDuration(n.links[i].duration || 0);
+    lab.onclick = () => {
+      openDurationPicker({
+        anchorTime: n.nodes[0].time,
+        previousTime: n.nodes[i].time,
+        currentDuration: n.links[i].duration || 0,
+        onApply: (durationMs) => {
+          n.links[i].duration = durationMs;
+          updateReverseTimes(n);
+          save();
+          drawReverseSpine(spine, n);
+        }
+      });
+    };
+    row.appendChild(lab);
+    return row;
+  }
+
+  function reverseGhostRow(n, spine) {
+    const frag = document.createDocumentFragment();
+    const link = document.createElement("div");
+    link.className = "link ghost";
+    const row = document.createElement("div");
+    row.className = "node ghost";
+    const add = document.createElement("button");
+    add.className = "add-dot"; add.textContent = "+";
+    add.title = "Add event"; add.setAttribute("aria-label", "Add event");
+    const hint = document.createElement("span");
+    hint.className = "ghost-hint"; hint.textContent = "add event";
+    const doAdd = () => {
+      const last = n.nodes[n.nodes.length - 1];
+      openTimePicker({
+        anchorTime: n.nodes[0].time,
+        previousTime: last.time,
+        onApply: (baseTime, duration) => {
+          n.nodes.push({ id: uid(), name: "", time: baseTime });
+          n.links.push({ duration: duration });
+          save();
+          drawReverseSpine(spine, n, n.nodes.length - 1);
+        }
+      });
+    };
+    add.onclick = doAdd;
+    row.append(add, hint);
+    frag.append(link, row);
+    return frag;
+  }
+
+  // reverse events use timestamps (ms) so dates beyond "today" are possible
+  const MS_MIN = 60000;
+
+  function startOfDay(ts) {
+    const d = new Date(ts || Date.now());
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  }
+  function minutesSinceMidnight(ts) {
+    const d = new Date(ts);
+    return d.getHours() * 60 + d.getMinutes();
+  }
+  function formatTimeInput(minutes) {
+    let h = Math.floor(minutes / 60) % 24;
+    if (h < 0) h += 24;
+    const m = Math.abs(minutes % 60);
+    return (h < 10 ? "0" + h : h) + ":" + (m < 10 ? "0" + m : m);
+  }
+  function formatDateInput(ts) {
+    const d = new Date(ts);
+    const tzOffset = d.getTimezoneOffset() * MS_MIN;
+    return new Date(ts - tzOffset).toISOString().slice(0, 10);
+  }
+  function isSameDay(a, b) {
+    const da = new Date(a), db = new Date(b);
+    return da.getFullYear() === db.getFullYear() && da.getMonth() === db.getMonth() && da.getDate() === db.getDate();
+  }
+
+  function parseDuration(s) {
+    if (!s) return null;
+    s = String(s).trim().toLowerCase().replace(/\s+/g, " ");
+    const num = Number(s);
+    if (!isNaN(num) && s !== "") return Math.round(num * 60) * MS_MIN;
+    let m = s.match(/^(?:\+?\s*)?(\d+)\s*h(?:ours?)?(?:\s*(\d+)\s*m(?:in)?)?$/);
+    if (m) return (parseInt(m[1], 10) * 60 + (m[2] ? parseInt(m[2], 10) : 0)) * MS_MIN;
+    m = s.match(/^(?:\+?\s*)?(\d+)\s*m(?:in)?(?:utes?)?$/);
+    if (m) return parseInt(m[1], 10) * MS_MIN;
+    m = s.match(/^(?:\+?\s*)?(\d+)\s*h(?:ours?)?$/);
+    if (m) return parseInt(m[1], 10) * 60 * MS_MIN;
+    m = s.match(/^(?:\+?\s*)?(\d+)[:\.](\d+)\s*h?$/);
+    if (m) return (parseInt(m[1], 10) * 60 + parseInt(m[2], 10)) * MS_MIN;
+    return null;
+  }
+
+  function formatDuration(ms) {
+    let minutes = Math.round(ms / MS_MIN);
+    const sign = minutes < 0 ? "-" : "";
+    minutes = Math.abs(minutes);
+    if (minutes === 0) return "0 min";
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    if (h > 0 && m > 0) return sign + h + " h " + m + " min";
+    if (h > 0) return sign + h + " h";
+    return sign + m + " min";
+  }
+
+  function formatTime(timestamp, anchorDay) {
+    const d = new Date(timestamp);
+    const h = d.getHours();
+    const m = d.getMinutes();
+    const timeStr = h + ":" + (m < 10 ? "0" + m : m);
+    const ref = anchorDay || startOfDay(Date.now());
+    if (isSameDay(timestamp, ref)) return timeStr;
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return timeStr + " · " + months[d.getMonth()] + " " + d.getDate();
+  }
+
+  function setClockHands(dot, timestamp) {
+    const d = new Date(timestamp);
+    const hourHand = dot.querySelector(".clock-hand.hour");
+    const minuteHand = dot.querySelector(".clock-hand.minute");
+    const hourAngle = ((d.getHours() % 12) + d.getMinutes() / 60) * 30;
+    const minuteAngle = d.getMinutes() * 6;
+    if (hourHand) hourHand.style.transform = `translateX(-50%) rotate(${hourAngle}deg)`;
+    if (minuteHand) minuteHand.style.transform = `translateX(-50%) rotate(${minuteAngle}deg)`;
+  }
+
+  function updateReverseTimes(n) {
+    for (let i = 1; i < n.nodes.length; i++) {
+      n.nodes[i].time = n.nodes[i-1].time + (n.links[i-1].duration || 0);
+    }
+  }
+
+  function addReverseNodeAt(n, i) {
+    const prevTime = n.nodes[i].time;
+    const dur = 30 * MS_MIN; // default 30 min
+    n.nodes.splice(i + 1, 0, { id: uid(), name: "", time: prevTime + dur });
+    n.links.splice(i, 0, { duration: dur });
+  }
+
+  // ---------- time picker modal ----------
+  function openTimePicker(opts) {
+    const anchorDay = startOfDay(opts.anchorTime);
+    const previousTime = opts.previousTime != null ? opts.previousTime : opts.anchorTime;
+    const currentTime = opts.currentTime != null ? opts.currentTime : (previousTime + 60 * MS_MIN);
+    let selectedDay = startOfDay(currentTime);
+    let selectedMin = minutesSinceMidnight(currentTime);
+    let offsetMs = 0;
+
+    const overlay = document.createElement("div");
+    overlay.className = "tp-overlay";
+    const modal = document.createElement("div");
+    modal.className = "tp-modal";
+    modal.innerHTML = `
+      <div class="tp-title">${opts.currentTime != null ? "Edit time" : "Add event"}</div>
+      <div class="tp-field">
+        <div class="tp-label">Time</div>
+        <input class="tp-time" type="time" value="${formatTimeInput(selectedMin)}" />
+      </div>
+      <div class="tp-field tp-row">
+        <div class="tp-label">± offset</div>
+        <input class="tp-offset" type="text" value="0 min" />
+      </div>
+      <div class="tp-field">
+        <div class="tp-label">Shift ±6 h</div>
+        <input class="tp-slider" type="range" min="-6" max="6" step="0.25" value="0" />
+      </div>
+      <div class="tp-field tp-date">
+        <div class="tp-label">Date</div>
+        <label class="tp-date-button">
+          <span class="tp-date-display">${formatDateLabel(selectedDay, anchorDay)}</span>
+          <input class="tp-date-input" type="date" value="${formatDateInput(selectedDay)}" />
+        </label>
+      </div>
+      <div class="tp-preview"></div>
+      <div class="tp-actions">
+        <button class="tp-btn cancel" type="button">Cancel</button>
+        <button class="tp-btn primary apply" type="button">Apply</button>
+      </div>`;
+
+    const timeInput = modal.querySelector(".tp-time");
+    const slider = modal.querySelector(".tp-slider");
+    const offsetInput = modal.querySelector(".tp-offset");
+    const dateInput = modal.querySelector(".tp-date-input");
+    const dateDisplay = modal.querySelector(".tp-date-display");
+    const preview = modal.querySelector(".tp-preview");
+
+    function formatDateLabel(ts, ref) {
+      if (isSameDay(ts, ref)) return "Today";
+      const d = new Date(ts);
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      return months[d.getMonth()] + " " + d.getDate();
+    }
+
+    function readTimeInput() {
+      const [h, m] = timeInput.value.split(":").map(Number);
+      selectedMin = (h || 0) * 60 + (m || 0);
+    }
+
+    function result() {
+      return selectedDay + selectedMin * MS_MIN + offsetMs;
+    }
+
+    function updatePreview() {
+      const base = result();
+      const dur = base - previousTime;
+      preview.innerHTML = `<strong>${formatTime(base, anchorDay)}</strong>${formatDuration(dur)} from previous`;
+    }
+
+    timeInput.oninput = () => { readTimeInput(); updatePreview(); };
+
+    slider.oninput = () => {
+      const v = parseFloat(slider.value) || 0;
+      offsetMs = v * 60 * MS_MIN;
+      offsetInput.value = formatDuration(offsetMs);
+      updatePreview();
+    };
+
+    offsetInput.oninput = () => {
+      const parsed = parseDuration(offsetInput.value);
+      if (parsed != null) {
+        offsetMs = parsed;
+        slider.value = Math.max(-6, Math.min(6, offsetMs / (60 * MS_MIN)));
+        updatePreview();
+      }
+    };
+
+    dateInput.oninput = () => {
+      if (dateInput.value) {
+        const [y, mo, d] = dateInput.value.split("-").map(Number);
+        selectedDay = new Date(y, mo - 1, d).getTime();
+      }
+      dateDisplay.textContent = formatDateLabel(selectedDay, anchorDay);
+      updatePreview();
+    };
+
+    modal.querySelector(".cancel").onclick = () => overlay.remove();
+    modal.querySelector(".apply").onclick = () => {
+      readTimeInput();
+      const base = result();
+      opts.onApply(base, base - previousTime);
+      overlay.remove();
+    };
+
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    updatePreview();
+  }
+
+  // ---------- duration picker modal (for reverse timeline intervals) ----------
+  function openDurationPicker(opts) {
+    const anchorDay = startOfDay(opts.anchorTime);
+    const previousTime = opts.previousTime;
+    let durationMs = opts.currentDuration || 0;
+
+    const overlay = document.createElement("div");
+    overlay.className = "tp-overlay";
+    const modal = document.createElement("div");
+    modal.className = "tp-modal";
+    modal.innerHTML = `
+      <div class="tp-title">Change interval</div>
+      <div class="tp-field tp-row">
+        <div class="tp-label">Interval</div>
+        <input class="tp-offset" type="text" value="${formatDuration(durationMs)}" readonly />
+      </div>
+      <div class="tp-field">
+        <div class="tp-label">Hours</div>
+        <input class="tp-slider" type="range" min="-6" max="6" step="1" value="${Math.max(-6, Math.min(6, Math.round(durationMs / (60 * MS_MIN))))}" />
+      </div>
+      <div class="tp-preview"></div>
+      <div class="tp-actions">
+        <button class="tp-btn cancel" type="button">Cancel</button>
+        <button class="tp-btn primary apply" type="button">Apply</button>
+      </div>`;
+
+    const slider = modal.querySelector(".tp-slider");
+    const offsetInput = modal.querySelector(".tp-offset");
+    const preview = modal.querySelector(".tp-preview");
+
+    function updatePreview() {
+      const v = parseFloat(slider.value) || 0;
+      durationMs = v * 60 * MS_MIN;
+      offsetInput.value = formatDuration(durationMs);
+      const nextTime = previousTime + durationMs;
+      preview.innerHTML = `<strong>${formatTime(nextTime, anchorDay)}</strong>${formatDuration(durationMs)} from previous`;
+    }
+
+    slider.oninput = updatePreview;
+
+    modal.querySelector(".cancel").onclick = () => overlay.remove();
+    modal.querySelector(".apply").onclick = () => {
+      opts.onApply(durationMs);
+      overlay.remove();
+    };
+
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    updatePreview();
+  }
+
+  // ---------- swipe-to-delete wire (drawn over CSS rail only while dragging) ----------
+  let dragState = null;
+
+  function getDotCenter(row, wire) {
+    const dot = row.querySelector(".dot");
+    const dr = dot.getBoundingClientRect();
+    const wr = wire.getBoundingClientRect();
+    return { x: dr.left + dr.width / 2 - wr.left, y: dr.top + dr.height / 2 - wr.top };
+  }
+
+  function updateWire(spine, draggedIndex, dx) {
+    const wire = spine.querySelector(".spine-wire");
+    if (!wire) return;
+    wire.innerHTML = "";
+    if (dragState == null || dx == null) return;
+    const nodes = Array.from(spine.querySelectorAll(".node:not(.ghost)"));
+    if (nodes.length < 2) return;
+    const threshold = 120;
+    const overThreshold = Math.abs(dx) > threshold;
+    const i = draggedIndex;
+
+    function pathSeg(a, b) {
+      // straight line from the neighbor dot to the dragged dot (two straight segments)
+      const d = `M ${a.x},${a.y} L ${b.x},${b.y}`;
+      const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      p.setAttribute("d", d);
+      // the further the dot is pulled, the more the string fades out
+      const pull = Math.min(Math.abs(dx) / threshold, 1);
+      p.style.opacity = String(1 - pull * 0.85);
+      if (dragState && dragState.snapping) p.classList.add("snapping");
+      return p;
+    }
+
+    if (i > 0) {
+      const a = getDotCenter(nodes[i - 1], wire);
+      const b = getDotCenter(nodes[i], wire);
+      wire.appendChild(pathSeg(a, b));
+    }
+    if (i < nodes.length - 1) {
+      const a = getDotCenter(nodes[i], wire);
+      const b = getDotCenter(nodes[i + 1], wire);
+      wire.appendChild(pathSeg(a, b));
+    }
+  }
+
+  function bindDotDrag(dot, row, n, node, i, spine, opts = {}) {
+    let neighbors = [];
+    const doDraw = opts.draw || drawSpine;
+    const onPointerDown = (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      dot.setPointerCapture(e.pointerId);
+      row.classList.add("dragging");
+      // hide CSS rail segments around the dragged node so SVG string is the only line
+      const nodes = Array.from(spine.querySelectorAll(".node:not(.ghost)"));
+      const links = Array.from(spine.querySelectorAll(".link:not(.ghost)"));
+      neighbors = [row];
+      if (i > 0) { neighbors.push(nodes[i - 1]); neighbors.push(links[i - 1]); }
+      if (i < nodes.length - 1) { neighbors.push(links[i]); neighbors.push(nodes[i + 1]); }
+      neighbors.forEach(el => el.classList.add("wire-hidden"));
+      dragState = { row, nodeIndex: i, startX: e.clientX, dx: 0, spine, snapping: false };
+      dot.addEventListener("pointermove", onPointerMove);
+      dot.addEventListener("pointerup", onPointerUp);
+      dot.addEventListener("pointercancel", onPointerUp);
+    };
+    const onPointerMove = (e) => {
+      if (!dragState) return;
+      dragState.dx = e.clientX - dragState.startX;
+      row.style.setProperty("--snap-dx", dragState.dx + "px");
+      row.style.transform = `translateX(${dragState.dx}px)`;
+      updateWire(spine, i, dragState.dx);
+    };
+    const onPointerUp = (e) => {
+      if (!dragState) return;
+      dot.releasePointerCapture(e.pointerId);
+      dot.removeEventListener("pointermove", onPointerMove);
+      dot.removeEventListener("pointerup", onPointerUp);
+      dot.removeEventListener("pointercancel", onPointerUp);
+      neighbors.forEach(el => el.classList.remove("wire-hidden"));
+      neighbors = [];
+      const dx = dragState.dx;
+      const threshold = 120;
+      if (Math.abs(dx) > threshold && n.nodes.length > 1) {
+        // snap delete
+        dragState.snapping = true;
+        updateWire(spine, i, dx);
+        row.classList.remove("dragging");
+        row.classList.add("removing");
+        setTimeout(() => {
+          dragState = null;
+          if (opts.onDelete) opts.onDelete(i);
+          else {
+            n.nodes.splice(i, 1);
+            n.links.splice(Math.min(i, n.links.length - 1), 1);
+            save();
+          }
+          doDraw(spine, n);
+        }, 220);
+      } else {
+        // snap back
+        dragState = null;
+        row.classList.remove("dragging");
+        row.classList.add("snap-back");
+        row.style.transform = "";
+        updateWire(spine);
+        setTimeout(() => row.classList.remove("snap-back"), 250);
+        // treat a tiny pull as a click
+        if (Math.abs(dx) < 6) {
+          node.done = !node.done; save(); row.classList.toggle("done", node.done);
+        }
+      }
+    };
+    dot.addEventListener("pointerdown", onPointerDown);
+  }
+
+  // ---------- utils ----------
+  function swap(el) { $view.innerHTML = ""; $view.appendChild(el); }
+  function escapeHtml(s) { return (s || "").replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
+  function escapeAttr(s) { return escapeHtml(s).replace(/"/g, "&quot;"); }
+  function trunc(s, n) { return s.length > n ? s.slice(0, n - 1) + "…" : s; }
+  function plural(c) { return c === 1 ? "item" : "items"; }
+  function pluralEvent(c) { return c === 1 ? "event" : "events"; }
+  function placeCaretEnd(node) {
+    node.focus();
+    const r = document.createRange(); r.selectNodeContents(node); r.collapse(false);
+    const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+  }
+
+  // ---------- theme toggle ----------
+  document.getElementById("themeBtn").onclick = () => {
+    const cur = document.documentElement.getAttribute("data-theme");
+    const isDark = cur ? cur === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    document.documentElement.setAttribute("data-theme", isDark ? "light" : "dark");
+  };
+
+  // ---------- auth UI ----------
+  const $slot = document.getElementById("authSlot");
+  let $open = null; // currently open popover element
+
+  function closePop() { if ($open) { $open.remove(); $open = null; document.removeEventListener("click", outside, true); } }
+  function outside(e) { if ($open && !$open.contains(e.target) && !$slot.contains(e.target)) closePop(); }
+  function popAnchor(el) {
+    closePop(); $open = el; $slot.appendChild(el);
+    setTimeout(() => document.addEventListener("click", outside, true), 0);
+  }
+
+  function updateAuthUI() {
+    $slot.innerHTML = "";
+    if (auth.user) {
+      const wrap = document.createElement("div"); wrap.className = "user-wrap";
+      const btn = document.createElement("button"); btn.className = "avatar-btn";
+      const initial = (auth.user.name || auth.user.email || "?").trim().charAt(0).toUpperCase();
+      btn.innerHTML =
+        `<span class="sync-dot" id="syncDot" title="Saving…"></span>` +
+        (auth.user.picture
+          ? `<img src="${escapeAttr(auth.user.picture)}" alt="" referrerpolicy="no-referrer" />`
+          : `<span class="avatar-fallback">${escapeHtml(initial)}</span>`) +
+        `<span class="who">${escapeHtml(auth.user.name || auth.user.email)}</span>`;
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        if ($open) { closePop(); return; }
+        const pop = document.createElement("div"); pop.className = "pop";
+        pop.innerHTML = `<div class="email">${escapeHtml(auth.user.email)}</div>`;
+        const out = document.createElement("button"); out.textContent = "Sign out";
+        out.onclick = doLogout;
+        pop.appendChild(out);
+        popAnchor(pop);
+      };
+      wrap.appendChild(btn); $slot.appendChild(wrap);
+    } else if (auth.clientId) {
+      const wrap = document.createElement("div"); wrap.className = "user-wrap";
+      const btn = document.createElement("button"); btn.className = "auth-btn"; btn.textContent = "Sign in";
+      btn.onclick = (e) => { e.stopPropagation(); if ($open) { closePop(); return; } openLoginPanel(); };
+      wrap.appendChild(btn); $slot.appendChild(wrap);
+    }
+    // if no clientId (backend not configured yet) → no auth control, app stays local-only
+  }
+
+  // GSI loads async — wait for it before touching google.accounts
+  function googleReady() { return !!(window.google && google.accounts && google.accounts.id); }
+  function whenGoogleReady(cb) {
+    if (googleReady()) return cb();
+    let n = 0;
+    const t = setInterval(() => {
+      if (googleReady()) { clearInterval(t); cb(); }
+      else if (++n > 50) clearInterval(t);
+    }, 100);
+  }
+  function ensureGoogleInit() {
+    if (!auth.clientId) return;
+    whenGoogleReady(() => google.accounts.id.initialize({ client_id: auth.clientId, callback: onGoogleCredential }));
+  }
+
+  function openLoginPanel() {
+    const panel = document.createElement("div"); panel.className = "gpanel";
+    panel.innerHTML = `<div class="ghint">Sign in with Google to keep your notes synced across devices.</div>
+      <div class="gbtn-holder" id="gbtn"></div>`;
+    popAnchor(panel);
+    const holder = panel.querySelector("#gbtn");
+    holder.textContent = "Loading…";
+    whenGoogleReady(() => {
+      if (!googleReady()) { holder.textContent = "Google sign-in unavailable."; return; }
+      holder.textContent = "";
+      try {
+        google.accounts.id.renderButton(holder,
+          { theme: "outline", size: "large", shape: "pill", text: "signin_with", logo_alignment: "center" });
+        google.accounts.id.prompt();
+      } catch (e) { holder.textContent = "Google sign-in unavailable."; }
+    });
+  }
+
+  function onGoogleCredential(resp) {
+    api("POST", "/auth/google", { credential: resp.credential })
+      .then(r => { closePop(); onLoggedIn(r.user, true); })
+      .catch(() => alert("Could not sign in. Please try again."));
+  }
+
+  async function onLoggedIn(user, justLoggedIn) {
+    auth.user = user;
+    try {
+      const server = await api("GET", "/notes");
+      if (server.notes && server.notes.length) {
+        db = { notes: server.notes };                       // adopt cloud copy
+      } else if (justLoggedIn && db.notes && db.notes.length) {
+        await api("PUT", "/notes", { notes: db.notes });    // migrate guest notes up
+      } else {
+        db = { notes: db.notes || [] };
+      }
+      localStorage.setItem(STORE, JSON.stringify(db));
+    } catch (e) {}
+    updateAuthUI();
+    go("home");
+  }
+
+  async function doLogout() {
+    try { await api("POST", "/logout"); } catch (e) {}
+    auth.user = null;
+    closePop();
+    updateAuthUI();
+    go("home");
+  }
+
+  // expose the GSI callback globally so google can reach it
+  window.onGoogleCredential = onGoogleCredential;
+
+  async function boot() {
+    render(); // instant local render (guest / cached)
+    try {
+      const cfg = await api("GET", "/config");
+      auth.clientId = cfg.googleClientId || "";
+      ensureGoogleInit();
+      try {
+        const me = await api("GET", "/me");
+        if (me && me.user) { await onLoggedIn(me.user, false); }
+      } catch (e) { /* 401 → guest */ }
+    } catch (e) { /* backend unreachable → local-only mode */ }
+    updateAuthUI();
+  }
+
+  boot();
+})();
+</script>
