@@ -25,13 +25,17 @@ app = Flask(__name__)
 
 
 def db():
-    c = sqlite3.connect(DB)
+    # timeout + busy_timeout so concurrent gunicorn workers wait instead of
+    # failing with "database is locked"
+    c = sqlite3.connect(DB, timeout=5)
     c.row_factory = sqlite3.Row
+    c.execute("PRAGMA busy_timeout=5000")
     return c
 
 
 def init_db():
     c = db()
+    c.execute("PRAGMA journal_mode=WAL")  # better concurrency for reads/writes
     c.executescript(
         """
         CREATE TABLE IF NOT EXISTS users(

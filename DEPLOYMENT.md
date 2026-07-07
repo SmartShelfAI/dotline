@@ -1,7 +1,10 @@
 # Dotline — how it works and is deployed
 
 A linear notebook: each note is a vertical line of connected points running down
-the center of the screen. A tap on a dot toggles "done" (black fill).
+the center of the screen. A tap on a dot toggles "done" (black fill). Dots are
+`<button>`s and fully keyboard-operable: Enter/Space toggles done,
+Delete/Backspace removes the point. The dot is dead-centre on every screen size
+(desktop and mobile) by design.
 
 - **Free Dotline**: to the left of the dot — a short editable alias
   (auto-numbered 1, 2, 3…, can be replaced with your own word); to the right —
@@ -16,7 +19,11 @@ the center of the screen. A tap on a dot toggles "done" (black fill).
   as `14:30 · Jul 8`.
 - Link labels sit in the gap between dots.
 - The dashed grey circle at the bottom adds a new dot.
-- Drag a dot sideways to delete it — the SVG string stretches, fades, and snaps.
+- Delete a point three ways: the **✕** button (shown on hover; always visible on
+  touch), Delete/Backspace with the dot focused, or drag the dot sideways — the
+  SVG string stretches, fades, and snaps. The ✕ lives in a right-hand gutter
+  reserved by symmetric node padding, so the dot stays centred and long wrapping
+  labels never collide with it.
 
 **Live:** https://fungeneering.com/notes/
 
@@ -127,6 +134,8 @@ otherwise the cloud copy is adopted.
 - `sessions(token PK, user_id, expires)`
 - `data(user_id PK, json, updated)` — user's entire notes blob in one row
   (last-write-wins, frontend debounce 700 ms).
+- Connections open with `busy_timeout=5000` and the DB runs in `journal_mode=WAL`
+  so the two gunicorn workers don't hit "database is locked".
 
 ---
 

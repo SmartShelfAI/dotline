@@ -288,7 +288,9 @@
     align-items: center;
     column-gap: 14px;
     min-height: var(--dot);
-    padding: 5px 0;
+    /* symmetric horizontal padding keeps the dot dead-centre while reserving
+       room on the right for the delete affordance (and mirrored empty gutter) */
+    padding: 5px 30px;
     transition: transform .18s cubic-bezier(.2,.8,.2,1), opacity .2s;
     touch-action: pan-y;
   }
@@ -304,6 +306,9 @@
     background: var(--surface);
     border: 3px solid var(--line);
     cursor: pointer; padding: 0;
+    /* the dot is a drag handle — take full pointer control so touch swipe-to-delete
+       is not swallowed by the browser as a scroll gesture */
+    touch-action: none;
     transition: transform .12s, background .15s, border-color .15s, box-shadow .15s;
   }
   .dot:hover { box-shadow: 0 0 0 6px var(--line-soft); }
@@ -371,8 +376,7 @@
   }
   .node-alias:hover, .node-alias:focus { background: var(--surface-2); }
   .node-alias.is-auto { color: var(--faint); }
-  .spine.reverse .node-alias { font-size: 16px; font-weight: 600; color: var(--ink); }
-  .spine.reverse .node-alias.is-auto { color: var(--faint); font-weight: 500; }
+  .spine.reverse .node-alias { font-size: 16px; font-weight: 600; color: var(--ink); cursor: pointer; }
   .node.done .node-alias { color: var(--faint); text-decoration: line-through; }
   .spine.reverse .node.done .node-alias { font-weight: 500; }
   .node-alias:empty::before { content: attr(data-ph); color: var(--faint); font-weight: 400; }
@@ -397,6 +401,21 @@
   .node-label.is-hint { color: var(--faint); }
   .node.done .node-label { color: var(--faint); text-decoration: line-through; }
   .node-label:empty::before { content: attr(data-ph); color: var(--faint); font-weight: 400; }
+
+  /* delete affordance: lives in the right gutter reserved by .node padding, so it
+     never overlaps the wrapping label and the dot stays centred */
+  .node-del {
+    position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
+    width: 26px; height: 26px; border-radius: 8px;
+    border: none; background: transparent; color: var(--faint);
+    cursor: pointer; opacity: 0; font-size: 14px; z-index: 3;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: opacity .12s, color .12s, background .12s;
+  }
+  .node:hover .node-del { opacity: 1; }
+  .node-del:hover { color: var(--danger); background: var(--surface-2); }
+  .node.ghost .node-del { display: none; }
+  @media (hover: none) { .node .node-del { opacity: 1; color: var(--faint); } }
 
   /* connector label is a pill centered ON the line */
   .link {
@@ -641,7 +660,7 @@
 
     const reverseAdd = document.createElement("button");
     reverseAdd.className = "card add";
-    reverseAdd.innerHTML = `<span class="plus">+</span><span class="add-label">New dot-line</span>`;
+    reverseAdd.innerHTML = `<span class="plus">+</span><span class="add-label">New timeline</span>`;
     reverseAdd.onclick = newReverseNote;
     reverseGrid.appendChild(reverseAdd);
 
@@ -882,10 +901,26 @@
       if (e.key === "Enter") { e.preventDefault(); addNodeAt(n, i); save(); drawSpine(spine, n, i + 1); }
     };
 
+    // keyboard: Enter/Space toggles done, Delete/Backspace removes the node
+    dot.onkeydown = (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        node.done = !node.done; save(); row.classList.toggle("done", node.done);
+      } else if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+        removeNode(n, i, spine);
+      }
+    };
+
     // swipe-to-delete on the dot: pull sideways like plucking a string
     bindDotDrag(dot, row, n, node, i, spine);
 
-    row.append(alias, dot, label);
+    const del = document.createElement("button");
+    del.className = "node-del"; del.textContent = "✕";
+    del.title = "Delete"; del.setAttribute("aria-label", "Delete item");
+    del.onclick = (e) => { e.stopPropagation(); removeNode(n, i, spine); };
+
+    row.append(alias, dot, label, del);
     return row;
   }
 
@@ -929,6 +964,19 @@
     n.links.splice(i, 0, { label: "" });
   }
 
+  // shared node removal used by drag-delete, the delete button, and keyboard
+  function removeNode(n, i, spine, opts) {
+    opts = opts || {};
+    if (n.nodes.length <= 1) return;
+    if (opts.onDelete) opts.onDelete(i);
+    else {
+      n.nodes.splice(i, 1);
+      n.links.splice(Math.min(i, n.links.length - 1), 1);
+      save();
+    }
+    (opts.draw || drawSpine)(spine, n);
+  }
+
   // ---------- reverse timeline ----------
   function drawReverseSpine(spine, n, focusIndex) {
     spine.innerHTML = "";
@@ -955,7 +1003,7 @@
 
     const anchorDay = startOfDay(n.nodes[0].time);
     const alias = document.createElement("div");
-    alias.className = "node-alias is-auto";
+    alias.className = "node-alias";
     alias.textContent = formatTime(node.time, anchorDay);
     alias.onclick = () => {
       openTimePicker({
@@ -1007,7 +1055,7 @@
       if (e.key === "Enter") { e.preventDefault(); addReverseNodeAt(n, i); save(); drawReverseSpine(spine, n, i + 1); }
     };
 
-    bindDotDrag(dot, row, n, node, i, spine, {
+    const revOpts = {
       draw: drawReverseSpine,
       onDelete: (i) => {
         if (n.nodes.length <= 1) return;
@@ -1019,9 +1067,26 @@
         updateReverseTimes(n);
         save();
       }
-    });
+    };
 
-    row.append(alias, dot, label);
+    dot.onkeydown = (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        node.done = !node.done; save(); row.classList.toggle("done", node.done);
+      } else if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+        removeNode(n, i, spine, revOpts);
+      }
+    };
+
+    bindDotDrag(dot, row, n, node, i, spine, revOpts);
+
+    const del = document.createElement("button");
+    del.className = "node-del"; del.textContent = "✕";
+    del.title = "Delete"; del.setAttribute("aria-label", "Delete event");
+    del.onclick = (e) => { e.stopPropagation(); removeNode(n, i, spine, revOpts); };
+
+    row.append(alias, dot, label, del);
     return row;
   }
 
@@ -1103,8 +1168,8 @@
     return new Date(ts - tzOffset).toISOString().slice(0, 10);
   }
   function isSameDay(a, b) {
-    const da = new Date(a), db = new Date(b);
-    return da.getFullYear() === db.getFullYear() && da.getMonth() === db.getMonth() && da.getDate() === db.getDate();
+    const d1 = new Date(a), d2 = new Date(b);
+    return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
   }
 
   function parseDuration(s) {
@@ -1139,7 +1204,7 @@
     const d = new Date(timestamp);
     const h = d.getHours();
     const m = d.getMinutes();
-    const timeStr = h + ":" + (m < 10 ? "0" + m : m);
+    const timeStr = (h < 10 ? "0" + h : h) + ":" + (m < 10 ? "0" + m : m);
     const ref = anchorDay || startOfDay(Date.now());
     if (isSameDay(timestamp, ref)) return timeStr;
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -1421,13 +1486,7 @@
         row.classList.add("removing");
         setTimeout(() => {
           dragState = null;
-          if (opts.onDelete) opts.onDelete(i);
-          else {
-            n.nodes.splice(i, 1);
-            n.links.splice(Math.min(i, n.links.length - 1), 1);
-            save();
-          }
-          doDraw(spine, n);
+          removeNode(n, i, spine, opts);
         }, 220);
       } else {
         // snap back
