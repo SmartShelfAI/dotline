@@ -262,7 +262,7 @@
 
   /* centered vertical line with stations — dot is always at 50% of the board */
   .spine { --dot: 34px; position: relative; }
-  .node, .link { position: relative; }
+  .node, .link { position: relative; z-index: 2; }
 
   /* rail runs vertically through the exact horizontal center */
   .node::before, .link::before {
@@ -283,7 +283,7 @@
     width: 100%; height: 100%;
     overflow: visible;
     pointer-events: none;
-    z-index: 1;
+    z-index: 1; /* drawn under nodes/links so it never covers dots/clocks */
   }
   .spine-wire path {
     fill: none;
