@@ -192,6 +192,9 @@ otherwise the cloud copy is adopted.
 | POST | `/logout` | sign out |
 | GET | `/notes` | `{notes:[...]}` for the user |
 | PUT | `/notes` | save `{notes:[...]}` (≤2 MB) |
+| POST | `/share` | snapshot one note → `{token}` (no auth; body `{note, text}`, ≤500 KB) |
+| GET | `/shared/<token>` | the snapshot as JSON (read-only view) |
+| GET | `/shared/<token>/text` | the snapshot as `text/plain` (AI / link previews) |
 | GET | `/health` | `{ok, configured}` |
 
 ### Storage (SQLite `/opt/dotline/dotline.db`)
@@ -199,6 +202,8 @@ otherwise the cloud copy is adopted.
 - `sessions(token PK, user_id, expires)`
 - `data(user_id PK, json, updated)` — user's entire notes blob in one row
   (last-write-wins, frontend debounce 700 ms).
+- `shares(token PK, note, text, created)` — immutable per-note snapshots for
+  sharing. **No auth / rate-limit** — anyone can create shares (see DECISIONS).
 - Connections open with `busy_timeout=5000` and the DB runs in `journal_mode=WAL`
   so the two gunicorn workers don't hit "database is locked".
 

@@ -1562,6 +1562,7 @@
 
   // ---------- reverse timeline ----------
   function drawReverseSpine(spine, n, focusIndex) {
+    if (nowTimer) { clearInterval(nowTimer); nowTimer = null; }  // avoid timer pile-up on re-draw
     spine.innerHTML = "";
     const wire = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     wire.classList.add("spine-wire");
