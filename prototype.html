@@ -258,7 +258,7 @@
     /* use a stack with reliable Cyrillic support for user-entered text */
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
-  .note-title:focus { background: var(--surface-2); }
+  .note-title:focus { background: transparent; }
   .note-title::placeholder { color: var(--faint); }
 
   /* editable/user-entered text fields need a Cyrillic-safe font stack */
@@ -283,7 +283,7 @@
 
   /* vertical line with stations — the axis sits a touch LEFT of centre so the
      right-hand labels get more room. One --shift drives rail, dots, pill and "+" */
-  .spine { --dot: 34px; --shift: 28px; position: relative; }
+  .spine { --dot: 34px; --shift: 28px; position: relative; padding-top: 30px; }
   .node, .link { position: relative; z-index: 2; }
 
   /* rail runs vertically through the exact horizontal center */
@@ -334,6 +334,23 @@
   .node.wire-hidden::before, .link.wire-hidden::before { opacity: 0; }
   .node.removing { opacity: 0; transform: translateX(var(--snap-dx, 120px)) scale(.9); }
   .node.snap-back { transition: transform .22s cubic-bezier(.2,.8,.2,1); transform: none; }
+  /* while dragging a dot: two hints flank it — left = add below, right = delete.
+     The one you release toward fires; a small pull does nothing. */
+  .drag-hint {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    font-size: var(--fs-2xs); font-weight: var(--w-semibold);
+    text-transform: uppercase; letter-spacing: .04em; white-space: nowrap;
+    padding: 5px 9px; border-radius: 8px;
+    background: var(--surface-2); color: var(--muted); border: 1px solid var(--hairline);
+    opacity: 0; transition: opacity .12s, background .12s, color .12s, transform .12s;
+    pointer-events: none; z-index: 6;
+  }
+  .node.dragging .drag-hint { opacity: 1; }
+  /* left of the dot = Delete (red); right of the dot = Add */
+  .drag-hint.left  { right: calc(50% + var(--shift) + 26px); color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, var(--hairline)); }
+  .drag-hint.right { left: calc(50% - var(--shift) + 26px); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, var(--hairline)); }
+  .drag-hint.left.armed  { background: var(--danger); color: #fff; border-color: var(--danger); }
+  .drag-hint.right.armed { background: var(--accent); color: #fff; border-color: var(--accent); }
   .dot {
     grid-column: 2;
     position: relative; z-index: 2;
@@ -1196,6 +1213,7 @@
 
     const revOpts = {
       draw: drawReverseSpine,
+      onAdd: (i) => addReverseNodeAt(n, i),
       onDelete: (i) => {
         if (n.nodes.length <= 1) return;
         if (i > 0 && i < n.links.length) {
@@ -1269,12 +1287,14 @@
     hint.className = "ghost-hint"; hint.textContent = "add event";
     const doAdd = () => {
       const last = n.nodes[n.nodes.length - 1];
-      openTimePicker({
+      // adding to a timeline = choosing an interval; default a clean -30 min
+      openDurationPicker({
         anchorTime: n.nodes[0].time,
         previousTime: last.time,
-        onApply: (baseTime, duration) => {
-          n.nodes.push({ id: uid(), name: "", time: baseTime });
-          n.links.push({ duration: duration });
+        currentDuration: -30 * MS_MIN,
+        onApply: (durationMs) => {
+          n.nodes.push({ id: uid(), name: "", time: last.time + durationMs });
+          n.links.push({ duration: durationMs });
           save();
           drawReverseSpine(spine, n, n.nodes.length - 1);
         }
@@ -1631,19 +1651,32 @@
 
   function bindDotDrag(dot, row, n, node, i, spine, opts = {}) {
     let neighbors = [];
+    let hints = [];
     const doDraw = opts.draw || drawSpine;
+    const THRESH = 110;   // firm pull; a small/accidental drag does nothing
+
+    function addHints() {
+      const left = document.createElement("div");
+      left.className = "drag-hint left"; left.textContent = "← Delete";
+      const right = document.createElement("div");
+      right.className = "drag-hint right"; right.textContent = "Add →";
+      row.append(left, right);
+      hints = [left, right];   // [0] left = delete, [1] right = add
+    }
+    function clearHints() { hints.forEach(h => h.remove()); hints = []; }
+
     const onPointerDown = (e) => {
       if (e.button !== 0) return;
       e.preventDefault();
       dot.setPointerCapture(e.pointerId);
       row.classList.add("dragging");
-      // hide CSS rail segments around the dragged node so SVG string is the only line
       const nodes = Array.from(spine.querySelectorAll(".node:not(.ghost)"));
       const links = Array.from(spine.querySelectorAll(".link:not(.ghost)"));
       neighbors = [row];
       if (i > 0) { neighbors.push(nodes[i - 1]); neighbors.push(links[i - 1]); }
       if (i < nodes.length - 1) { neighbors.push(links[i]); neighbors.push(nodes[i + 1]); }
       neighbors.forEach(el => el.classList.add("wire-hidden"));
+      addHints();
       dragState = { row, nodeIndex: i, startX: e.clientX, dx: 0, spine, snapping: false };
       dot.addEventListener("pointermove", onPointerMove);
       dot.addEventListener("pointerup", onPointerUp);
@@ -1651,10 +1684,13 @@
     };
     const onPointerMove = (e) => {
       if (!dragState) return;
-      dragState.dx = e.clientX - dragState.startX;
-      row.style.setProperty("--snap-dx", dragState.dx + "px");
-      row.style.transform = `translateX(${dragState.dx}px)`;
-      updateWire(spine, i, dragState.dx);
+      const dx = e.clientX - dragState.startX;
+      dragState.dx = dx;
+      row.style.setProperty("--snap-dx", dx + "px");
+      row.style.transform = `translateX(${dx}px)`;
+      if (hints[0]) hints[0].classList.toggle("armed", dx <= -THRESH); // left = delete
+      if (hints[1]) hints[1].classList.toggle("armed", dx >= THRESH);  // right = add
+      updateWire(spine, i, dx);
     };
     const onPointerUp = (e) => {
       if (!dragState) return;
@@ -1664,27 +1700,33 @@
       dot.removeEventListener("pointercancel", onPointerUp);
       neighbors.forEach(el => el.classList.remove("wire-hidden"));
       neighbors = [];
+      clearHints();
       const dx = dragState.dx;
-      const threshold = 120;
-      if (Math.abs(dx) > threshold && n.nodes.length > 1) {
-        // snap delete
+
+      if (dx <= -THRESH && n.nodes.length > 1) {
+        // release LEFT → delete
         dragState.snapping = true;
         updateWire(spine, i, dx);
         row.classList.remove("dragging");
         row.classList.add("removing");
-        setTimeout(() => {
-          dragState = null;
-          removeNode(n, i, spine, opts);
-        }, 220);
+        setTimeout(() => { dragState = null; removeNode(n, i, spine, opts); }, 220);
+      } else if (dx >= THRESH) {
+        // release RIGHT → add a point below
+        dragState = null;
+        row.classList.remove("dragging");
+        row.style.transform = "";
+        updateWire(spine);
+        if (opts.onAdd) opts.onAdd(i); else addNodeAt(n, i);
+        save();
+        doDraw(spine, n, i + 1);
       } else {
-        // snap back
+        // snap back; a tiny pull is treated as a tap (toggle done)
         dragState = null;
         row.classList.remove("dragging");
         row.classList.add("snap-back");
         row.style.transform = "";
         updateWire(spine);
         setTimeout(() => row.classList.remove("snap-back"), 250);
-        // treat a tiny pull as a click
         if (Math.abs(dx) < 6) {
           node.done = !node.done; save(); row.classList.toggle("done", node.done);
         }
