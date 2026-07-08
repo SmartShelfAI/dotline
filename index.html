@@ -1251,6 +1251,11 @@
         <input class="tp-hero-time" type="time" value="${formatTimeInput(selectedMin)}" />
         ${isAnchor ? "" : `<div class="tp-sub"></div>`}
       </div>
+      ${isAnchor ? "" : `
+      <div class="tp-field">
+        <div class="tp-label">Shift ±6 h</div>
+        <input class="tp-slider" type="range" min="-6" max="6" step="0.25" value="0" />
+      </div>`}
       <div class="tp-field tp-date">
         <div class="tp-label">Date</div>
         <label class="tp-date-button">
@@ -1264,6 +1269,7 @@
       </div>`;
 
     const timeInput = modal.querySelector(".tp-hero-time");
+    const slider = modal.querySelector(".tp-slider"); // null for the anchor
     const dateInput = modal.querySelector(".tp-date-input");
     const dateDisplay = modal.querySelector(".tp-date-display");
     const sub = modal.querySelector(".tp-sub");
@@ -1282,7 +1288,11 @@
 
     function result() { return selectedDay + selectedMin * MS_MIN; }
 
-    // small secondary line: how far this event is from the point above
+    // the slider is just a live view of the offset from the point above; the big
+    // time and the sub always reflect the same value so nothing fights
+    function syncSlider() {
+      if (slider) slider.value = Math.max(-6, Math.min(6, (result() - previousTime) / (60 * MS_MIN)));
+    }
     function updateSub() {
       if (!sub) return;
       const dur = result() - previousTime;
@@ -1290,7 +1300,16 @@
       sub.textContent = dur === 0 ? "same time" : mag + (dur < 0 ? " earlier" : " later");
     }
 
-    timeInput.oninput = () => { readTimeInput(); updateSub(); };
+    timeInput.oninput = () => { readTimeInput(); syncSlider(); updateSub(); };
+
+    if (slider) slider.oninput = () => {
+      const t = previousTime + (parseFloat(slider.value) || 0) * 60 * MS_MIN;
+      selectedDay = startOfDay(t);
+      selectedMin = minutesSinceMidnight(t);
+      timeInput.value = formatTimeInput(selectedMin);
+      dateDisplay.textContent = formatDateLabel(selectedDay);
+      updateSub();
+    };
 
     dateInput.oninput = () => {
       if (dateInput.value) {
@@ -1298,6 +1317,7 @@
         selectedDay = new Date(y, mo - 1, d).getTime();
       }
       dateDisplay.textContent = formatDateLabel(selectedDay);
+      syncSlider();
       updateSub();
     };
 
@@ -1312,6 +1332,7 @@
     overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
+    syncSlider();
     updateSub();
   }
 
