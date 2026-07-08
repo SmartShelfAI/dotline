@@ -487,8 +487,8 @@
   .hl-star {
     position: absolute; left: 0; top: 50%; transform: translateY(-50%);
     width: 26px; height: 26px; padding: 0; border: none; background: transparent;
-    color: var(--faint); cursor: pointer; font-size: var(--fs-md); line-height: 1;
-    display: grid; place-items: center; z-index: 4; opacity: .5;
+    color: var(--muted); cursor: pointer; font-size: var(--fs-md); line-height: 1;
+    display: grid; place-items: center; z-index: 4; opacity: .9;
     transition: opacity .12s, color .12s, transform .12s;
   }
   .hl-star:hover { opacity: 1; color: var(--accent); transform: translateY(-50%) scale(1.12); }
@@ -666,9 +666,17 @@
       var(--accent) 0%,
       color-mix(in srgb, var(--accent) 20%, var(--bg)) 50%,
       var(--accent) 100%);
+    background-size: 150% 100%;
     -webkit-mask: repeating-linear-gradient(to right, #000 0 7px, transparent 7px 13px);
             mask: repeating-linear-gradient(to right, #000 0 7px, transparent 7px 13px);
+    /* gentle "ripple on water from a light breeze": small, slow, back-and-forth */
+    animation: now-ripple 6.5s ease-in-out infinite;
   }
+  @keyframes now-ripple {
+    0%, 100% { background-position: 36% 0; -webkit-mask-position: 0 0;   mask-position: 0 0; }
+    50%      { background-position: 64% 0; -webkit-mask-position: 5px 0; mask-position: 5px 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { .now-line::before { animation: none; } }
   .now-label {
     position: absolute; right: 22px; top: -10px; z-index: 2;
     background: var(--accent); color: #fff; white-space: nowrap;
