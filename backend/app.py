@@ -57,6 +57,11 @@ def init_db():
             created TEXT);
         """
     )
+    # add the readable-text column to any pre-existing shares table
+    try:
+        c.execute("ALTER TABLE shares ADD COLUMN text TEXT")
+    except Exception:
+        pass
     c.commit()
     c.close()
 
@@ -213,9 +218,11 @@ def create_share():
     blob = json.dumps(note)
     if len(blob) > 500_000:
         return jsonify({"error": "too big"}), 413
+    text = data.get("text")
+    text = text if isinstance(text, str) else ""
     tok = secrets.token_urlsafe(9)
     c = db()
-    c.execute("INSERT INTO shares(token, note, created) VALUES(?,?,?)", (tok, blob, now()))
+    c.execute("INSERT INTO shares(token, note, text, created) VALUES(?,?,?,?)", (tok, blob, text, now()))
     c.commit()
     c.close()
     return jsonify({"token": tok})
@@ -229,6 +236,17 @@ def get_share(token):
     if not row:
         return jsonify({"error": "not found"}), 404
     return jsonify({"note": json.loads(row["note"])})
+
+
+# plain-text version — readable by any fetcher (AI, link preview, curl)
+@app.get("/api/shared/<token>/text")
+def get_share_text(token):
+    c = db()
+    row = c.execute("SELECT text FROM shares WHERE token = ?", (token,)).fetchone()
+    c.close()
+    if not row:
+        return "not found", 404, {"Content-Type": "text/plain; charset=utf-8"}
+    return (row["text"] or ""), 200, {"Content-Type": "text/plain; charset=utf-8"}
 
 
 @app.get("/api/health")

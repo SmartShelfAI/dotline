@@ -335,18 +335,24 @@
     background: color-mix(in srgb, var(--accent) 12%, var(--surface));
     color: var(--accent); font-size: var(--fs-sm); font-weight: var(--w-medium);
   }
-  .share-modal { max-width: 420px; }
+  .share-modal { max-width: 440px; }
   .share-title { font-size: var(--fs-lg); font-weight: var(--w-semibold); margin-bottom: 14px; }
+  .share-lbl {
+    font-size: var(--fs-2xs); color: var(--muted); text-transform: uppercase;
+    letter-spacing: .05em; margin: 12px 0 6px;
+  }
   .share-url {
-    width: 100%; height: 42px; padding: 0 12px; border-radius: 10px; margin-bottom: 14px;
+    width: 100%; height: 40px; padding: 0 12px; border-radius: 10px; margin-bottom: 8px;
     border: 1px solid var(--hairline); background: var(--surface-2); color: var(--ink);
     font-size: var(--fs-sm);
   }
   .share-copy {
-    width: 100%; height: 44px; border-radius: 12px; border: none; cursor: pointer;
+    width: 100%; height: 42px; border-radius: 12px; border: none; cursor: pointer;
     background: var(--accent); color: #fff; font-size: var(--fs-base); font-weight: var(--w-medium);
   }
   .share-copy:hover { background: var(--accent-strong); }
+  .share-copy.ghost { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  .share-copy.ghost:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent); }
   .note-title {
     font-size: var(--fs-xl); font-weight: var(--w-semibold); letter-spacing: -0.02em;
     border: none; background: transparent; color: var(--ink);
@@ -1179,34 +1185,60 @@
     el.insertBefore(banner, el.querySelector(".board"));
   }
 
+  // readable plain-text of a note (client knows the timezone, so times are right)
+  function noteToText(n) {
+    const isRev = n.type === "reverse";
+    const anchorDay = isRev && n.nodes[0] ? startOfDay(n.nodes[0].time) : null;
+    const lines = [n.title || "Untitled", ""];
+    n.nodes.forEach((nd, i) => {
+      const left = isRev ? formatTime(nd.time, anchorDay)
+        : ((nd.alias && nd.alias.length) ? nd.alias : String(i + 1));
+      const name = nd.name || "";
+      lines.push("• " + left + (name ? " — " + name : "") + (nd.done ? " ✓" : ""));
+      if (i < n.nodes.length - 1) {
+        if (isRev) lines.push("    (" + formatDuration((n.links[i] && n.links[i].duration) || 0) + ")");
+        else if (n.links[i] && n.links[i].label) lines.push("    (" + n.links[i].label + ")");
+      }
+    });
+    return lines.join("\n");
+  }
+
   async function onShare(n) {
     try {
-      const r = await api("POST", "/share", { note: n });
-      showShare(location.origin + location.pathname + "?s=" + r.token);
+      const r = await api("POST", "/share", { note: n, text: noteToText(n) });
+      showShare(r.token);
     } catch (e) { alert("Could not create a share link."); }
   }
 
-  function showShare(url) {
+  function showShare(token) {
+    const appUrl = location.origin + location.pathname + "?s=" + token;
+    const textUrl = location.origin + API + "/shared/" + token + "/text";
     const overlay = document.createElement("div"); overlay.className = "tp-overlay";
     const modal = document.createElement("div"); modal.className = "tp-modal share-modal";
     modal.innerHTML = `
       <button class="tp-close" type="button" aria-label="Close">✕</button>
       <div class="share-title">Share this note</div>
-      <input class="share-url" readonly value="${escapeAttr(url)}" />
-      <button class="share-copy" type="button">Copy link</button>`;
+      <div class="share-lbl">Link (opens the note)</div>
+      <input class="share-url app" readonly value="${escapeAttr(appUrl)}" />
+      <button class="share-copy app" type="button">Copy link</button>
+      <div class="share-lbl">Plain-text link — readable by AI &amp; previews</div>
+      <input class="share-url text" readonly value="${escapeAttr(textUrl)}" />
+      <button class="share-copy text ghost" type="button">Copy text link</button>`;
     const close = () => overlay.remove();
     modal.querySelector(".tp-close").onclick = close;
     overlay.onclick = (e) => { if (e.target === overlay) close(); };
-    const urlInput = modal.querySelector(".share-url");
-    const copyBtn = modal.querySelector(".share-copy");
-    copyBtn.onclick = async () => {
-      try { await navigator.clipboard.writeText(url); }
-      catch (e) { urlInput.select(); document.execCommand("copy"); }
-      copyBtn.textContent = "Copied ✓";
-      setTimeout(close, 700);
-    };
+    function wire(btn, input, url) {
+      btn.onclick = async () => {
+        try { await navigator.clipboard.writeText(url); }
+        catch (e) { input.select(); document.execCommand("copy"); }
+        const t = btn.textContent; btn.textContent = "Copied ✓";
+        setTimeout(() => { btn.textContent = t; }, 1200);
+      };
+    }
+    wire(modal.querySelector(".share-copy.app"), modal.querySelector(".share-url.app"), appUrl);
+    wire(modal.querySelector(".share-copy.text"), modal.querySelector(".share-url.text"), textUrl);
     overlay.appendChild(modal); document.body.appendChild(overlay);
-    setTimeout(() => urlInput.select(), 0);
+    setTimeout(() => modal.querySelector(".share-url.app").select(), 0);
   }
 
   function exitShare() {
