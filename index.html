@@ -414,6 +414,17 @@
   .spine.reverse .node.done .node-alias { font-weight: var(--w-medium); }
   .node-alias:empty::before { content: attr(data-ph); color: var(--faint); font-weight: var(--w-regular); }
 
+  /* chronological violation highlight (reverse timeline) */
+  .node.chrono-violation .dot { background: var(--danger); border-color: var(--danger); }
+  .node.chrono-violation .clock-hand,
+  .node.chrono-violation .clock-cap { background: var(--surface); }
+  .node.chrono-violation .node-alias { color: var(--danger); }
+  .chrono-hint {
+    font-size: 10px; font-weight: var(--w-medium);
+    color: var(--danger); line-height: 1.2;
+    text-transform: uppercase; letter-spacing: 0.02em;
+  }
+
   /* label: main item name to the RIGHT of the dot */
   .node-label {
     grid-column: 3;
@@ -1080,7 +1091,17 @@
     const anchorDay = startOfDay(n.nodes[0].time);
     const alias = document.createElement("div");
     alias.className = "node-alias";
-    alias.textContent = formatTime(node.time, anchorDay);
+    const timeSpan = document.createElement("span");
+    timeSpan.className = "alias-time";
+    timeSpan.textContent = formatTime(node.time, anchorDay);
+    alias.appendChild(timeSpan);
+    if (i > 0 && node.time < n.nodes[i - 1].time) {
+      row.classList.add("chrono-violation");
+      const hint = document.createElement("div");
+      hint.className = "chrono-hint";
+      hint.textContent = "not chronological";
+      alias.appendChild(hint);
+    }
     alias.onclick = () => {
       openTimePicker({
         anchorTime: n.nodes[0].time,
