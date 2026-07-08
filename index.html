@@ -553,37 +553,28 @@
      hang beside the stretched string (a text label, if any, stays put) */
   .link.wire-hidden .link-add { opacity: 0; }
 
-  /* directional arrow on a timing segment: a CLEAN triangle that terminates the
-     line — the shaft runs on the far side only, a surface mask erases the rail
-     behind the triangle and in the small gap toward the target dot. Direction
-     follows time: down = next later, up = next earlier. */
-  .link .arrow { display: none; }
-  .link.arr-down .arrow, .link.arr-up .arrow {
-    display: block; position: absolute;
+  /* Directional arrow, built with NO colour masks (those left notches/tails on
+     the dot). Instead the rail (::before) is simply SHORTENED to leave room for
+     the triangle + gap, and the target dot's rail stub is suppressed via a
+     .no-stub-* class in JS. The dot is opaque, so it is always a clean circle.
+     A clean triangle (::after) sits at the shaft's end; a real ~5px gap follows
+     before the dot. Direction: down = next later, up = next earlier. */
+  .link.arr-down::before { bottom: 9px; }   /* shaft stops above the arrowhead */
+  .link.arr-up::before   { top: 9px; }
+  .link.arr-down::after, .link.arr-up::after {
+    content: ""; position: absolute;
     left: calc(50% - var(--shift)); transform: translateX(-50%);
-    width: 14px; height: 10px;
-    z-index: 1; pointer-events: none;
-  }
-  /* 6px gap keeps the arrow a few pixels clear of the dot so the circle stays
-     clean and round in every theme/state (normal, highlight, done, dark/light).
-     The ::before block is the same colour as the page background and erases the
-     rail both under the arrow icon and in the gap toward the dot. */
-  .link.arr-down .arrow { bottom: 6px; }   /* near the lower dot */
-  .link.arr-up .arrow   { top: 6px; }       /* near the upper dot */
-  .link .arrow::before {
-    content: ""; position: absolute; left: 50%; transform: translateX(-50%);
-    width: 14px; height: 18px; background: var(--surface);
-  }
-  .link.arr-down .arrow::before { bottom: -8px; }
-  .link.arr-up .arrow::before   { top: -8px; }
-  .link .arrow::after {
-    content: ""; position: absolute; left: 50%; transform: translateX(-50%);
     width: 0; height: 0;
     border-left: 6px solid transparent; border-right: 6px solid transparent;
+    z-index: 1; pointer-events: none;
   }
-  .link.arr-down .arrow::after { top: 0; border-top: 9px solid var(--line); }   /* tip down */
-  .link.arr-up .arrow::after   { bottom: 0; border-bottom: 9px solid var(--line); } /* tip up */
-  .link.wire-hidden .arrow { opacity: 0; }
+  .link.arr-down::after { bottom: 0; border-top: 9px solid var(--line); }     /* tip down */
+  .link.arr-up::after   { top: 0; border-bottom: 9px solid var(--line); }     /* tip up */
+  .link.wire-hidden::after { opacity: 0; }
+  /* suppress the rail stub between a dot and an arrowhead pointing at it */
+  .node.no-stub-top::before { top: 50%; }
+  .node.no-stub-bottom::before { bottom: 50%; }
+  .node.no-stub-top.no-stub-bottom::before { display: none; }
   .link-label {
     position: relative; z-index: 2;
     outline: none;
@@ -1041,10 +1032,29 @@
       if (i < n.nodes.length - 1) spine.appendChild(linkRow(n, i));
     });
     spine.appendChild(ghostRow(n, spine));
+    applyArrowStubs(spine, n);
     if (focusIndex != null) {
       const labels = spine.querySelectorAll(".node-label");
       const t = labels[focusIndex];
       if (t) { t.classList.add("fade-in"); placeCaretEnd(t); }
+    }
+  }
+
+  // suppress the rail stub between a dot and an arrowhead that points at it, so
+  // the line terminates cleanly at the triangle with a gap before the circle
+  function applyArrowStubs(spine, n) {
+    const els = Array.from(spine.querySelectorAll(".node:not(.ghost)"));
+    const dirOf = (i) => {
+      if (n.type === "reverse") {
+        const d = (n.links[i] && n.links[i].duration) || 0;
+        return d > 0 ? "down" : d < 0 ? "up" : "none";
+      }
+      return n.arrow === "up" ? "up" : n.arrow === "down" ? "down" : "none";
+    };
+    for (let i = 0; i < n.nodes.length - 1; i++) {
+      const dir = dirOf(i);
+      if (dir === "down" && els[i + 1]) els[i + 1].classList.add("no-stub-top");
+      else if (dir === "up" && els[i]) els[i].classList.add("no-stub-bottom");
     }
   }
 
@@ -1159,11 +1169,6 @@
     row.className = "link" + arr;
     const hasLabel = !!(n.links[i] && n.links[i].label);
     renderLinkContent(row, n, i, hasLabel);
-    if (arr) {
-      const arrow = document.createElement("div");
-      arrow.className = "arrow";
-      row.appendChild(arrow);
-    }
     return row;
   }
 
@@ -1261,6 +1266,7 @@
       if (i < n.nodes.length - 1) spine.appendChild(reverseLinkRow(n, i, spine));
     });
     spine.appendChild(reverseGhostRow(n, spine));
+    applyArrowStubs(spine, n);
     if (focusIndex != null) {
       const labels = spine.querySelectorAll(".node-label");
       const t = labels[focusIndex];
@@ -1397,11 +1403,6 @@
       });
     };
     row.appendChild(lab);
-    if (dur !== 0) {
-      const arrow = document.createElement("div");
-      arrow.className = "arrow";
-      row.appendChild(arrow);
-    }
     return row;
   }
 
@@ -1809,6 +1810,8 @@
     const onPointerDown = (e) => {
       if (e.button !== 0) return;
       e.preventDefault();
+      // dragging isn't typing — drop any focused field so the mobile keyboard hides
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
       THRESH = e.pointerType === "touch" ? 30 : 80;
       dot.setPointerCapture(e.pointerId);
       row.classList.add("dragging");
