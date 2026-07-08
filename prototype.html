@@ -492,17 +492,22 @@
   /* time picker modal */
   .tp-overlay {
     position: fixed; inset: 0; z-index: 200;
-    background: rgba(0,0,0,.35);
+    background: rgba(10, 14, 20, .22);
+    backdrop-filter: blur(7px) saturate(1.1);
+    -webkit-backdrop-filter: blur(7px) saturate(1.1);
     display: grid; place-items: center; padding: 18px;
     animation: tp-fade .15s ease;
   }
   .tp-modal {
-    background: var(--surface);
-    border: 1px solid var(--hairline);
+    /* frosted-glass panel: slightly translucent over the blurred backdrop */
+    background: color-mix(in srgb, var(--surface) 82%, transparent);
+    backdrop-filter: blur(30px) saturate(1.5);
+    -webkit-backdrop-filter: blur(30px) saturate(1.5);
+    border: 1px solid color-mix(in srgb, var(--hairline) 60%, transparent);
     border-radius: 18px;
     padding: 22px;
     width: 100%; max-width: 360px;
-    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    box-shadow: 0 20px 60px rgba(0,0,0,.28);
     animation: tp-pop .18s ease;
   }
   @keyframes tp-fade { from { opacity: 0; } to { opacity: 1; } }
@@ -1286,7 +1291,6 @@
     const modal = document.createElement("div");
     modal.className = "tp-modal";
     modal.innerHTML = `
-      <div class="tp-title">${isEdit ? "Edit time" : "Add event"}</div>
       <div class="tp-hero">
         <input class="tp-hero-time" type="text" inputmode="numeric" value="${formatTimeInput(selectedMin)}" aria-label="Time HH:MM" />
         ${isAnchor ? "" : `<div class="tp-sub"></div>`}
@@ -1402,7 +1406,6 @@
     const modal = document.createElement("div");
     modal.className = "tp-modal";
     modal.innerHTML = `
-      <div class="tp-title">Change interval</div>
       <div class="tp-hero">
         <input class="tp-hero-value" type="text" value="${formatDuration(durationMs)}" />
         <div class="tp-sub"></div>
