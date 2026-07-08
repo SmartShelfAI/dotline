@@ -345,6 +345,10 @@
     touch-action: pan-y;
   }
   .node.dragging { transition: none; }
+  /* while dragging, hide the labels so they don't collide with the hints */
+  .node.dragging .node-label,
+  .node.dragging .node-alias,
+  .node.dragging .hl-star { opacity: 0; }
   .node.wire-hidden::before, .link.wire-hidden::before { opacity: 0; }
   .node.removing { opacity: 0; transform: translateX(var(--snap-dx, 120px)) scale(.9); }
   .node.snap-back { transition: transform .22s cubic-bezier(.2,.8,.2,1); transform: none; }
@@ -382,6 +386,19 @@
   .dot:active { transform: scale(.9); }
   .dot:focus-visible { outline: 2px solid var(--line); outline-offset: 3px; }
   .node.done .dot { background: var(--ink); border-color: var(--ink); }
+
+  /* highlight: a small star at the far left toggles it; the point grows */
+  .hl-star {
+    position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+    width: 26px; height: 26px; padding: 0; border: none; background: transparent;
+    color: var(--faint); cursor: pointer; font-size: var(--fs-md); line-height: 1;
+    display: grid; place-items: center; z-index: 4; opacity: .5;
+    transition: opacity .12s, color .12s, transform .12s;
+  }
+  .hl-star:hover { opacity: 1; color: var(--accent); transform: translateY(-50%) scale(1.12); }
+  .node.hl .hl-star { opacity: 1; color: var(--accent); }
+  .node.hl .dot { transform: scale(1.5); }
+  .node.hl .node-label { font-size: calc(var(--fs-md) * 1.7); font-weight: var(--w-bold); letter-spacing: -0.02em; }
 
   /* analog clock hands inside reverse dots (div-based, reliable rotation) */
   .clock-hand, .clock-cap {
@@ -1004,7 +1021,7 @@
 
   function nodeRow(n, node, i, spine) {
     const row = document.createElement("div");
-    row.className = "node" + (node.done ? " done" : "");
+    row.className = "node" + (node.done ? " done" : "") + (node.hl ? " hl" : "");
     row.dataset.index = i;
 
     const alias = document.createElement("div");
@@ -1054,17 +1071,16 @@
     dot.onkeydown = (e) => {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
-        node.done = !node.done; save(); row.classList.toggle("done", node.done);
+        toggleDone(node, row);
       } else if (e.key === "Delete" || e.key === "Backspace") {
         e.preventDefault();
         removeNode(n, i, spine);
       }
     };
 
-    // swipe-to-delete on the dot: pull sideways like plucking a string
     bindDotDrag(dot, row, n, node, i, spine);
 
-    row.append(alias, dot, label);
+    row.append(makeStar(node, row), alias, dot, label);
     return row;
   }
 
@@ -1143,6 +1159,35 @@
     n.links.splice(i, 0, { label: "" });
   }
 
+  // tapping the dot toggles done; finishing a point also clears its highlight
+  function toggleDone(node, row) {
+    node.done = !node.done;
+    if (node.done && node.hl) {
+      node.hl = false;
+      row.classList.remove("hl");
+      const star = row.querySelector(".hl-star");
+      if (star) star.textContent = "☆"; // ☆
+    }
+    save();
+    row.classList.toggle("done", node.done);
+  }
+
+  // small star at the far left that toggles the point's highlight
+  function makeStar(node, row) {
+    const star = document.createElement("button");
+    star.className = "hl-star";
+    star.textContent = node.hl ? "★" : "☆"; // ★ / ☆
+    star.title = "Highlight"; star.setAttribute("aria-label", "Highlight point");
+    star.onclick = (e) => {
+      e.stopPropagation();
+      node.hl = !node.hl;
+      row.classList.toggle("hl", node.hl);
+      star.textContent = node.hl ? "★" : "☆";
+      save();
+    };
+    return star;
+  }
+
   // shared node removal used by drag-delete, the delete button, and keyboard
   function removeNode(n, i, spine, opts) {
     opts = opts || {};
@@ -1177,7 +1222,7 @@
 
   function reverseNodeRow(n, node, i, spine) {
     const row = document.createElement("div");
-    row.className = "node" + (node.done ? " done" : "");
+    row.className = "node" + (node.done ? " done" : "") + (node.hl ? " hl" : "");
     row.dataset.index = i;
 
     const anchorDay = startOfDay(n.nodes[0].time);
@@ -1267,7 +1312,7 @@
     dot.onkeydown = (e) => {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
-        node.done = !node.done; save(); row.classList.toggle("done", node.done);
+        toggleDone(node, row);
       } else if (e.key === "Delete" || e.key === "Backspace") {
         e.preventDefault();
         removeNode(n, i, spine, revOpts);
@@ -1276,7 +1321,7 @@
 
     bindDotDrag(dot, row, n, node, i, spine, revOpts);
 
-    row.append(alias, dot, label);
+    row.append(makeStar(node, row), alias, dot, label);
     return row;
   }
 
@@ -1690,7 +1735,8 @@
     let neighbors = [];
     let hints = [];
     const doDraw = opts.draw || drawSpine;
-    const THRESH = 110;   // firm pull; a small/accidental drag does nothing
+    // firm enough to avoid accidents, but much shorter on touch (small screens)
+    let THRESH = 84;
 
     function addHints() {
       const left = document.createElement("div");
@@ -1705,6 +1751,7 @@
     const onPointerDown = (e) => {
       if (e.button !== 0) return;
       e.preventDefault();
+      THRESH = e.pointerType === "touch" ? 48 : 84;
       dot.setPointerCapture(e.pointerId);
       row.classList.add("dragging");
       const nodes = Array.from(spine.querySelectorAll(".node:not(.ghost)"));
@@ -1765,7 +1812,7 @@
         updateWire(spine);
         setTimeout(() => row.classList.remove("snap-back"), 250);
         if (Math.abs(dx) < 6) {
-          node.done = !node.done; save(); row.classList.toggle("done", node.done);
+          toggleDone(node, row);
         }
       }
     };
