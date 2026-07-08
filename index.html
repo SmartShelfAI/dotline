@@ -241,8 +241,9 @@
     opacity: 0; transition: opacity .12s, transform .1s;
   }
   .card-paint {
-    bottom: 42px; border: 1.5px solid rgba(0,0,0,.14);
-    background: conic-gradient(from 0deg, #F43F5E, #F59E0B, #EAB308, #22C55E, #06B6D4, #6366F1, #A855F7, #F43F5E);
+    bottom: 42px; border: 1.5px solid rgba(255,255,255,.55);
+    background: linear-gradient(135deg, #22C55E 0%, #8B5CF6 52%, #EAB308 100%);
+    box-shadow: 0 1px 3px rgba(0,0,0,.2);
   }
   .card-uncolor { bottom: 12px; background: transparent; border: 1.6px solid currentColor; color: inherit; }
   .card:hover .card-paint, .card:hover .card-uncolor { opacity: .95; }
@@ -296,9 +297,12 @@
       -webkit-overflow-scrolling: touch; padding-bottom: 8px; scrollbar-width: none;
     }
     .carousel::-webkit-scrollbar { display: none; }
+    /* spacers so the first/last card can sit dead-centre with an ear each side */
+    .carousel::before, .carousel::after { content: ""; flex: 0 0 9%; }
     .carousel .card {
-      width: 76%; scroll-snap-align: start;
-      aspect-ratio: 1.1 / 1; min-height: 0; overflow: hidden; /* a bit more square + peek */
+      flex: 0 0 82%; width: auto;
+      scroll-snap-align: center; scroll-snap-stop: always; /* page one card per swipe */
+      aspect-ratio: 1.1 / 1; min-height: 0; overflow: hidden; /* squarer + ears */
     }
   }
 
