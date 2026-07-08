@@ -442,6 +442,16 @@
     /* keep the pill centred on the shifted axis */
     padding-right: calc(var(--shift) * 2);
   }
+  /* collapsed connector: a small dot on the line; tap it to expand the note field */
+  .link-add {
+    position: relative; z-index: 2;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--line); border: none; padding: 0; cursor: pointer;
+    box-shadow: 0 0 0 4px var(--surface); /* halo punches the rail so it stands out */
+    transition: transform .12s;
+  }
+  .link-add:hover { transform: scale(1.3); }
+  .link-add:focus-visible { outline: 2px solid var(--line); outline-offset: 4px; }
   .link-label {
     position: relative; z-index: 2;
     outline: none;
@@ -959,15 +969,41 @@
   function linkRow(n, i) {
     const row = document.createElement("div");
     row.className = "link";
-    const lab = document.createElement("div");
-    lab.className = "link-label";
-    lab.contentEditable = "true";
-    lab.spellcheck = false;
-    lab.setAttribute("data-ph", "link note");
-    lab.textContent = (n.links[i] && n.links[i].label) || "";
-    lab.oninput = () => { ensureLink(n, i).label = lab.textContent.trim(); save(); };
-    row.appendChild(lab);
+    const hasLabel = !!(n.links[i] && n.links[i].label);
+    renderLinkContent(row, n, i, hasLabel);
     return row;
+  }
+
+  // free-note connector: collapsed = a small dot; expanded = editable "link note".
+  // Empty on blur collapses back so nothing dangles between points.
+  function renderLinkContent(row, n, i, expanded) {
+    row.innerHTML = "";
+    if (expanded) {
+      const lab = document.createElement("div");
+      lab.className = "link-label";
+      lab.contentEditable = "true";
+      lab.spellcheck = false;
+      lab.setAttribute("data-ph", "link note");
+      lab.textContent = (n.links[i] && n.links[i].label) || "";
+      lab.oninput = () => { ensureLink(n, i).label = lab.textContent.trim(); save(); };
+      lab.onblur = () => {
+        const t = lab.textContent.trim();
+        ensureLink(n, i).label = t; save();
+        if (!t) renderLinkContent(row, n, i, false); // collapse back to the dot
+      };
+      row.appendChild(lab);
+    } else {
+      const add = document.createElement("button");
+      add.className = "link-add";
+      add.title = "Add a note here";
+      add.setAttribute("aria-label", "Add a note between points");
+      add.onclick = () => {
+        renderLinkContent(row, n, i, true);
+        const l = row.querySelector(".link-label");
+        if (l) placeCaretEnd(l);
+      };
+      row.appendChild(add);
+    }
   }
   function ensureLink(n, i) { if (!n.links[i]) n.links[i] = { label: "" }; return n.links[i]; }
 
