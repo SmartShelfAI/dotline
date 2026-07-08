@@ -466,6 +466,18 @@
   /* while dragging a dot to delete, hide the bare connector dot so it doesn't
      hang beside the stretched string (a text label, if any, stays put) */
   .link.wire-hidden .link-add { opacity: 0; }
+  .link-arrow {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .link-arrow.up { top: 20%; border-bottom: 6px solid var(--line); }
+  .link-arrow.down { bottom: 20%; border-top: 6px solid var(--line); }
   .link-label {
     position: relative; z-index: 2;
     outline: none;
@@ -1190,6 +1202,13 @@
   function reverseLinkRow(n, i, spine) {
     const row = document.createElement("div");
     row.className = "link";
+
+    const arrow = document.createElement("div");
+    arrow.className = "link-arrow";
+    const d = n.nodes[i + 1].time - n.nodes[i].time;
+    if (d < 0) arrow.classList.add("up");
+    else if (d > 0) arrow.classList.add("down");
+
     const lab = document.createElement("div");
     lab.className = "link-label interval";
     lab.setAttribute("data-ph", "interval");
@@ -1207,7 +1226,7 @@
         }
       });
     };
-    row.appendChild(lab);
+    row.append(arrow, lab);
     return row;
   }
 
