@@ -526,11 +526,6 @@
     padding: 8px 6px; outline: none;
   }
   .tp-hero input:focus { background: var(--surface-2); border-color: var(--hairline); }
-  /* strip native chrome so the time reads like the clean centred interval value */
-  .tp-hero-time::-webkit-calendar-picker-indicator { display: none; }
-  .tp-hero-time::-webkit-inner-spin-button,
-  .tp-hero-time::-webkit-clear-button { -webkit-appearance: none; display: none; }
-  .tp-hero-time::-webkit-datetime-edit { text-align: center; padding: 0; }
   .tp-sub { margin-top: 4px; font-size: var(--fs-sm); color: var(--muted); font-family: var(--sans); font-weight: var(--w-regular); }
   .tp-date-button {
     position: relative;
@@ -1271,7 +1266,7 @@
     modal.innerHTML = `
       <div class="tp-title">${isEdit ? "Edit time" : "Add event"}</div>
       <div class="tp-hero">
-        <input class="tp-hero-time" type="time" value="${formatTimeInput(selectedMin)}" />
+        <input class="tp-hero-time" type="text" inputmode="numeric" value="${formatTimeInput(selectedMin)}" aria-label="Time HH:MM" />
         ${isAnchor ? "" : `<div class="tp-sub"></div>`}
       </div>
       ${isAnchor ? "" : `
@@ -1304,9 +1299,22 @@
       return months[d.getMonth()] + " " + d.getDate();
     }
 
+    // accept "13:30", "1330", "930", "9" etc.
     function readTimeInput() {
-      const [h, m] = timeInput.value.split(":").map(Number);
-      selectedMin = (h || 0) * 60 + (m || 0);
+      let h, m;
+      if (timeInput.value.includes(":")) {
+        const [hh, mm] = timeInput.value.split(":");
+        h = parseInt(hh, 10); m = parseInt(mm, 10);
+      } else {
+        const d = timeInput.value.replace(/[^0-9]/g, "");
+        if (d.length >= 3) { h = parseInt(d.slice(0, d.length - 2), 10); m = parseInt(d.slice(-2), 10); }
+        else { h = parseInt(d, 10); m = 0; }
+      }
+      if (isNaN(h)) h = 0;
+      if (isNaN(m)) m = 0;
+      h = Math.max(0, Math.min(23, h));
+      m = Math.max(0, Math.min(59, m));
+      selectedMin = h * 60 + m;
     }
 
     function result() { return selectedDay + selectedMin * MS_MIN; }
@@ -1324,6 +1332,8 @@
     }
 
     timeInput.oninput = () => { readTimeInput(); syncSlider(); updateSub(); };
+    timeInput.onfocus = () => { if (timeInput.select) timeInput.select(); };
+    timeInput.onblur = () => { readTimeInput(); timeInput.value = formatTimeInput(selectedMin); syncSlider(); updateSub(); };
 
     if (slider) slider.oninput = () => {
       const t = previousTime + (parseFloat(slider.value) || 0) * 60 * MS_MIN;
