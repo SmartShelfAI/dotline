@@ -19,11 +19,8 @@ Delete/Backspace removes the point. The dot is dead-centre on every screen size
   as `14:30 · Jul 8`.
 - Link labels sit in the gap between dots.
 - The dashed grey circle at the bottom adds a new dot.
-- Delete a point three ways: the **✕** button (shown on hover; always visible on
-  touch), Delete/Backspace with the dot focused, or drag the dot sideways — the
-  SVG string stretches, fades, and snaps. The ✕ lives in a right-hand gutter
-  reserved by symmetric node padding, so the dot stays centred and long wrapping
-  labels never collide with it.
+- Delete a point by dragging the dot sideways — the SVG string stretches, fades,
+  and snaps. (Keyboard equivalent: focus the dot, press Delete/Backspace.)
 
 **Live:** https://fungeneering.com/notes/
 

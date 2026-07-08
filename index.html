@@ -302,9 +302,7 @@
     align-items: center;
     column-gap: 14px;
     min-height: var(--dot);
-    /* symmetric horizontal padding keeps the dot dead-centre while reserving
-       room on the right for the delete affordance (and mirrored empty gutter) */
-    padding: 5px 30px;
+    padding: 5px 0;
     transition: transform .18s cubic-bezier(.2,.8,.2,1), opacity .2s;
     touch-action: pan-y;
   }
@@ -415,21 +413,6 @@
   .node-label.is-hint { color: var(--faint); }
   .node.done .node-label { color: var(--faint); text-decoration: line-through; }
   .node-label:empty::before { content: attr(data-ph); color: var(--faint); font-weight: 400; }
-
-  /* delete affordance: lives in the right gutter reserved by .node padding, so it
-     never overlaps the wrapping label and the dot stays centred */
-  .node-del {
-    position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
-    width: 26px; height: 26px; border-radius: 8px;
-    border: none; background: transparent; color: var(--faint);
-    cursor: pointer; opacity: 0; font-size: 14px; z-index: 3;
-    display: inline-flex; align-items: center; justify-content: center;
-    transition: opacity .12s, color .12s, background .12s;
-  }
-  .node:hover .node-del { opacity: 1; }
-  .node-del:hover { color: var(--danger); background: var(--surface-2); }
-  .node.ghost .node-del { display: none; }
-  @media (hover: none) { .node .node-del { opacity: 1; color: var(--faint); } }
 
   /* connector label is a pill centered ON the line */
   .link {
@@ -929,12 +912,7 @@
     // swipe-to-delete on the dot: pull sideways like plucking a string
     bindDotDrag(dot, row, n, node, i, spine);
 
-    const del = document.createElement("button");
-    del.className = "node-del"; del.textContent = "✕";
-    del.title = "Delete"; del.setAttribute("aria-label", "Delete item");
-    del.onclick = (e) => { e.stopPropagation(); removeNode(n, i, spine); };
-
-    row.append(alias, dot, label, del);
+    row.append(alias, dot, label);
     return row;
   }
 
@@ -1095,12 +1073,7 @@
 
     bindDotDrag(dot, row, n, node, i, spine, revOpts);
 
-    const del = document.createElement("button");
-    del.className = "node-del"; del.textContent = "✕";
-    del.title = "Delete"; del.setAttribute("aria-label", "Delete event");
-    del.onclick = (e) => { e.stopPropagation(); removeNode(n, i, spine, revOpts); };
-
-    row.append(alias, dot, label, del);
+    row.append(alias, dot, label);
     return row;
   }
 
