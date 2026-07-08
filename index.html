@@ -123,7 +123,8 @@
   .icon-btn:active { transform: scale(.94); }
 
   /* ---------- auth ---------- */
-  .top-actions { display: flex; align-items: center; gap: 10px; }
+  .top-left { display: flex; align-items: center; }
+  .top-actions { display: flex; align-items: center; gap: 12px; }
   .auth-btn {
     appearance: none;
     border: 1px solid var(--hairline); background: var(--surface); color: var(--ink);
@@ -811,6 +812,7 @@
 
 <div class="app">
   <div class="topbar">
+    <div id="topLeft" class="top-left"></div>
     <div class="top-actions">
       <div id="topShare"></div>
       <div id="authSlot"></div>
@@ -951,9 +953,10 @@
 
   // Share / Make-a-copy lives in the top bar (always visible, never crowded)
   function updateTopShare() {
+    const left = document.getElementById("topLeft");
     const slot = document.getElementById("topShare");
-    if (!slot) return;
-    slot.innerHTML = "";
+    if (!slot || !left) return;
+    left.innerHTML = ""; slot.innerHTML = "";
     if (route.name === "shared" && sharedNote) {
       const b = document.createElement("button");
       b.className = "auth-btn"; b.textContent = "Make a copy";
@@ -962,14 +965,14 @@
     } else if (route.name === "note") {
       const n = db.notes.find(x => x.id === route.noteId);
       if (n) {
-        // real-time mode toggle — timing notes only
+        // real-time mode toggle (left edge) — timing notes only
         if (n.type === "reverse") {
           const live = document.createElement("button");
           live.className = "auth-btn" + (n.realtime ? " primary" : "");
           live.textContent = n.realtime ? "◉ Real Time" : "◎ Real Time";
           live.title = "Real-time mode: proportional spacing + a moving now-line";
           live.onclick = () => { n.realtime = !n.realtime; save(); render(); };
-          slot.appendChild(live);
+          left.appendChild(live);
         }
         const b = document.createElement("button");
         b.className = "auth-btn"; b.textContent = "Share";
