@@ -1434,11 +1434,24 @@
       overlay.remove();
     };
 
+    modal.tabIndex = -1;
+    modal.addEventListener("keydown", (e) => {
+      e.stopPropagation();
+      if (e.key === "Enter") {
+        e.preventDefault();
+        modal.querySelector(".tp-apply").click();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        overlay.remove();
+      }
+    });
+
     overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
     syncSlider();
     updateSub();
+    setTimeout(() => timeInput.focus(), 0);
   }
 
   // ---------- interval picker (reverse timeline) ----------
@@ -1493,10 +1506,23 @@
       overlay.remove();
     };
 
+    modal.tabIndex = -1;
+    modal.addEventListener("keydown", (e) => {
+      e.stopPropagation();
+      if (e.key === "Enter") {
+        e.preventDefault();
+        modal.querySelector(".tp-apply").click();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        overlay.remove();
+      }
+    });
+
     overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
     updateSub();
+    setTimeout(() => heroInput.focus(), 0);
   }
 
   // ---------- swipe-to-delete wire (drawn over CSS rail only while dragging) ----------
