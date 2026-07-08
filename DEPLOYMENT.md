@@ -95,44 +95,34 @@ The three time modals are built only from these tokens: a big hero value
 | File | What it is |
 |------|------------|
 | `prototype.html` | Source of the page (without `<head>`). **Edit this.** |
-| `index.html` | Built standalone page = `_head` + `prototype.html` + `_tail`. Rebuild with the command below. |
-| `backend/app.py` | Flask API (Google sign-in, sessions, notes in SQLite). |
+| `index.html` | Built standalone page = `_head` + `prototype.html` + `_tail`. Built by `deploy.sh` — don't hand-edit. |
+| `deploy.sh` | Build `index.html` + deploy (`front` / `back` / `all` / `build`). |
+| `backend/app.py` | Flask API (Google sign-in, sessions, notes, sharing in SQLite). |
 | `backend/dotline-api.service` | systemd unit. |
 | `backend/dotline.env.example` | Env template with Google Client ID. |
 | `DEPLOYMENT.md` | This file (how it works + deploy + design system). |
 | `DECISIONS.md` | **Log of what/why was decided** — read for recent UI rationale. |
 | `PLAN_CHECK_SPEC.md` | Future "Check Plan" feature spec (not built yet). |
+| `README.md`, `REPORT.md`, `TIME_PICKER.md` | Older notes; DECISIONS.md supersedes them. |
 
 > For the rationale behind recent interaction/visual choices (arrows, drag
 > directions, colours, fonts, home carousel, highlight), see **DECISIONS.md** —
 > it is the source of truth for "why", kept ahead of the prose below.
 
-### Rebuild and deploy the frontend
+### Rebuild and deploy
 ```bash
 cd /Users/inxnik/nikita/135_fungeneering_com/notes
-cat > _head.html <<'EOF'
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#128074" />
-<title>Dotline — linear notes</title>
-<script src="https://accounts.google.com/gsi/client" async></script>
-<style>
-  html, body { margin: 0; padding: 0; }
-  *, *::before, *::after { box-sizing: border-box; }
-</style>
-</head>
-<body>
-EOF
-printf '</body>\n</html>\n' > _tail.html
-cat _head.html prototype.html _tail.html > index.html
-rm _head.html _tail.html
-scp -i ~/.ssh/id_rsa_smart_shelf index.html \
-  root@212.24.97.97:/var/www/fungeneering.com/notes/index.html
+./deploy.sh          # build index.html + deploy frontend
+./deploy.sh back     # deploy backend/app.py + restart dotline-api
+./deploy.sh all      # both
+./deploy.sh build    # build index.html only, no deploy
 ```
-No nginx changes are needed — static files are served by the common `location /`.
+`deploy.sh` wraps `prototype.html` in the `<head>`/`<body>` skeleton → `index.html`
+and scps it. No nginx changes are needed for frontend deploys.
+
+The notes HTML is served with `Cache-Control: no-store` (a dedicated `location =
+/notes/` + `location = /notes/index.html` block in the nginx config), so updates
+never get stuck in the browser cache.
 
 ---
 
@@ -202,8 +192,9 @@ otherwise the cloud copy is adopted.
 - `sessions(token PK, user_id, expires)`
 - `data(user_id PK, json, updated)` — user's entire notes blob in one row
   (last-write-wins, frontend debounce 700 ms).
-- `shares(token PK, note, text, created)` — immutable per-note snapshots for
-  sharing. **No auth / rate-limit** — anyone can create shares (see DECISIONS).
+- `shares(token PK, note, text, ip, created)` — immutable per-note snapshots for
+  sharing. No auth (anyone can create), but **rate-limited to 30/IP/hour** and
+  snapshots **older than 180 days are pruned** on each create.
 - Connections open with `busy_timeout=5000` and the DB runs in `journal_mode=WAL`
   so the two gunicorn workers don't hit "database is locked".
 
