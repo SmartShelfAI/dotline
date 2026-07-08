@@ -750,7 +750,7 @@
       type: "reverse",
       title: "Reverse " + idx,
       autoTitle: true,
-      nodes: [ { id: uid(), name: "", time: Date.now() } ],
+      nodes: [ { id: uid(), name: "", time: floorMin(Date.now()) } ],
       links: []
     };
     db.notes.unshift(n); save(); go("note", n.id);
@@ -1155,6 +1155,10 @@
   // reverse events use timestamps (ms) so dates beyond "today" are possible
   const MS_MIN = 60000;
 
+  // event times are edited in whole minutes; strip stray seconds/ms so interval
+  // deltas come out exact (e.g. -30 min, not -31)
+  function floorMin(ts) { return ts - (((ts % MS_MIN) + MS_MIN) % MS_MIN); }
+
   function startOfDay(ts) {
     const d = new Date(ts || Date.now());
     d.setHours(0, 0, 0, 0);
@@ -1230,6 +1234,8 @@
   }
 
   function updateReverseTimes(n) {
+    // heal older notes whose anchor still carries seconds/ms
+    if (n.nodes[0]) n.nodes[0].time = floorMin(n.nodes[0].time);
     for (let i = 1; i < n.nodes.length; i++) {
       n.nodes[i].time = n.nodes[i-1].time + (n.links[i-1].duration || 0);
     }
