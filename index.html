@@ -470,22 +470,28 @@
      hang beside the stretched string (a text label, if any, stays put) */
   .link.wire-hidden .link-add { opacity: 0; }
 
-  /* directional arrowhead on a timing segment — points the way time flows:
-     down toward the lower dot (next is later), up toward the upper dot (earlier) */
-  .spine.reverse .link.arr-down::after,
-  .spine.reverse .link.arr-up::after {
-    content: "";
-    position: absolute;
-    left: calc(50% - var(--shift));
-    transform: translateX(-50%);
-    width: 0; height: 0;
-    border-left: 6px solid transparent;
-    border-right: 6px solid transparent;
+  /* directional arrow on a timing segment: a CLEAN triangle that terminates the
+     line — the shaft runs on the far side only, a surface mask erases the rail
+     behind the triangle and in the small gap toward the target dot. Direction
+     follows time: down = next later, up = next earlier. */
+  .link .arrow { display: none; }
+  .link.arr-down .arrow, .link.arr-up .arrow {
+    display: block; position: absolute;
+    left: calc(50% - var(--shift)); transform: translateX(-50%);
+    width: 14px; height: 17px;
+    background: var(--surface);   /* board colour — erases the rail here */
     z-index: 1; pointer-events: none;
   }
-  .spine.reverse .link.arr-down::after { bottom: 7px; border-top: 9px solid var(--line); }
-  .spine.reverse .link.arr-up::after { top: 7px; border-bottom: 9px solid var(--line); }
-  .spine.reverse .link.wire-hidden::after { opacity: 0; }
+  .link.arr-down .arrow { bottom: -9px; }   /* near the lower dot */
+  .link.arr-up .arrow   { top: -9px; }       /* near the upper dot */
+  .link .arrow::after {
+    content: ""; position: absolute; left: 50%; transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 6px solid transparent; border-right: 6px solid transparent;
+  }
+  .link.arr-down .arrow::after { top: 0; border-top: 9px solid var(--line); }   /* tip down */
+  .link.arr-up .arrow::after   { bottom: 0; border-bottom: 9px solid var(--line); } /* tip up */
+  .link.wire-hidden .arrow { opacity: 0; }
   .link-label {
     position: relative; z-index: 2;
     outline: none;
@@ -1254,6 +1260,11 @@
       });
     };
     row.appendChild(lab);
+    if (dur !== 0) {
+      const arrow = document.createElement("div");
+      arrow.className = "arrow";
+      row.appendChild(arrow);
+    }
     return row;
   }
 
