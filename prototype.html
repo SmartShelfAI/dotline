@@ -240,6 +240,20 @@
   .editor-head {
     display: flex; align-items: center; gap: 14px; margin-bottom: 22px;
   }
+  /* whole-chain arrow direction toggle (free notes) */
+  .arrow-toggle {
+    display: inline-flex; gap: 2px; flex: none;
+    padding: 2px; border-radius: 10px;
+    background: var(--surface-2); border: 1px solid var(--hairline);
+  }
+  .arrow-toggle button {
+    appearance: none; border: none; background: transparent; cursor: pointer;
+    width: 30px; height: 30px; border-radius: 8px; color: var(--muted);
+    font-size: var(--fs-md); line-height: 1; display: grid; place-items: center;
+    transition: background .12s, color .12s;
+  }
+  .arrow-toggle button:hover { color: var(--ink); }
+  .arrow-toggle button.on { background: var(--accent); color: #fff; }
   .back-btn {
     appearance: none; border: 1px solid var(--hairline); background: var(--surface);
     color: var(--muted); border-radius: 10px; height: 38px; padding: 0 14px 0 11px;
@@ -869,9 +883,24 @@
       <div class="editor-head">
         <button class="back-btn">‹ Notes</button>
         <textarea class="note-title" placeholder="Note title" rows="1"></textarea>
+        <div class="arrow-toggle" role="group" aria-label="Line arrows">
+          <button data-arrow="none" title="No arrows">—</button>
+          <button data-arrow="down" title="Arrows point down">↓</button>
+          <button data-arrow="up" title="Arrows point up">↑</button>
+        </div>
       </div>
       <div class="board"><div class="spine free" id="spine"></div></div>`;
     el.querySelector(".back-btn").onclick = () => go("home");
+    // whole-chain arrow direction (a note-level property)
+    const toggle = el.querySelector(".arrow-toggle");
+    function syncToggle() {
+      toggle.querySelectorAll("button").forEach(b =>
+        b.classList.toggle("on", b.dataset.arrow === (n.arrow || "none")));
+    }
+    toggle.querySelectorAll("button").forEach(b => {
+      b.onclick = () => { n.arrow = b.dataset.arrow; save(); syncToggle(); drawSpine(spine, n); };
+    });
+    syncToggle();
     const title = el.querySelector(".note-title");
     title.value = n.title || "";
     title.oninput = () => { n.title = title.value; n.autoTitle = false; save(); autoResize(title); };
@@ -1061,16 +1090,25 @@
 
   function linkRow(n, i) {
     const row = document.createElement("div");
-    row.className = "link";
+    // whole-chain arrow direction stored on the note (n.arrow: none|up|down)
+    const arr = n.arrow === "up" ? " arr-up" : n.arrow === "down" ? " arr-down" : "";
+    row.className = "link" + arr;
     const hasLabel = !!(n.links[i] && n.links[i].label);
     renderLinkContent(row, n, i, hasLabel);
+    if (arr) {
+      const arrow = document.createElement("div");
+      arrow.className = "arrow";
+      row.appendChild(arrow);
+    }
     return row;
   }
 
   // free-note connector: collapsed = a small dot; expanded = editable "link note".
   // Empty on blur collapses back so nothing dangles between points.
   function renderLinkContent(row, n, i, expanded) {
-    row.innerHTML = "";
+    // remove only the connector element, keep any .arrow
+    const prev = row.querySelector(".link-add, .link-label");
+    if (prev) prev.remove();
     if (expanded) {
       const lab = document.createElement("div");
       lab.className = "link-label";
