@@ -220,6 +220,23 @@
     .card .card-del { opacity: 1; color: var(--muted); }
   }
 
+  /* colour controls: a palette (random colour) + a reset outline, bottom-right */
+  .card-paint, .card-uncolor {
+    position: absolute; right: 10px; padding: 0; cursor: pointer;
+    width: 24px; height: 24px; border-radius: 50%; z-index: 3;
+    opacity: 0; transition: opacity .12s, transform .1s;
+  }
+  .card-paint {
+    bottom: 42px; border: 1.5px solid rgba(0,0,0,.14);
+    background: conic-gradient(from 0deg, #F43F5E, #F59E0B, #EAB308, #22C55E, #06B6D4, #6366F1, #A855F7, #F43F5E);
+  }
+  .card-uncolor { bottom: 12px; background: transparent; border: 1.6px solid currentColor; color: inherit; }
+  .card:hover .card-paint, .card:hover .card-uncolor { opacity: .95; }
+  .card-paint:active, .card-uncolor:active { transform: scale(.9); }
+  @media (hover: none) { .card .card-paint, .card .card-uncolor { opacity: .9; } }
+  .card.colored .card-del { color: currentColor; opacity: .7; }
+  .card.colored .card-del:hover { color: var(--danger); background: rgba(0,0,0,.08); opacity: 1; }
+
   .card.add {
     align-items: center; justify-content: center;
     border-style: dashed; border-color: var(--faint);
@@ -845,6 +862,17 @@
     return sec;
   }
 
+  // curated palette (coordinated set); each entry has a paired legible text colour
+  const CD = "#2B2A3F", CW = "#FFFFFF";
+  const CARD_COLORS = [
+    { bg: "#DED3BE", text: CD }, { bg: "#D8D7D0", text: CD }, { bg: "#F5E1A1", text: CD },
+    { bg: "#EEBDC5", text: CD }, { bg: "#D8CD73", text: CD }, { bg: "#9FBADE", text: CD },
+    { bg: "#A3B5B6", text: CD }, { bg: "#C0AEB3", text: CD }, { bg: "#E19865", text: CD },
+    { bg: "#B0AE6B", text: CD }, { bg: "#2B2A3F", text: CW }, { bg: "#683F53", text: CW },
+    { bg: "#624349", text: CW }, { bg: "#8D3436", text: CW }, { bg: "#2A636C", text: CW },
+    { bg: "#CA465A", text: CW }
+  ];
+
   function cardFor(n) {
     const c = document.createElement("button");
     c.className = "card";
@@ -854,7 +882,10 @@
       <button class="card-del" title="Delete" aria-label="Delete">✕</button>
       <div class="title">${escapeHtml(n.title || "Untitled")}</div>
       <div class="meta">${count} ${isReverse ? pluralEvent(count) : plural(count)}</div>
-      <div class="mini">${miniSvg(n)}</div>`;
+      <div class="mini"></div>
+      <button class="card-paint" title="Recolour" aria-label="Recolour card"></button>
+      <button class="card-uncolor" title="Reset colour" aria-label="Reset card colour"></button>`;
+    applyCardColor(c, n);
     c.onclick = () => go("note", n.id);
     c.querySelector(".card-del").onclick = (e) => {
       e.stopPropagation();
@@ -862,27 +893,58 @@
         db.notes = db.notes.filter(x => x.id !== n.id); save(); renderHome();
       }
     };
+    c.querySelector(".card-paint").onclick = (e) => {
+      e.stopPropagation();
+      const cur = n.cardColor ? n.cardColor.bg : null;
+      let pick;
+      do { pick = CARD_COLORS[Math.floor(Math.random() * CARD_COLORS.length)]; }
+      while (pick.bg === cur && CARD_COLORS.length > 1);
+      n.cardColor = pick; save(); applyCardColor(c, n);
+    };
+    c.querySelector(".card-uncolor").onclick = (e) => {
+      e.stopPropagation();
+      n.cardColor = null; save(); applyCardColor(c, n);
+    };
     return c;
   }
 
-  function miniSvg(n) {
+  // apply (or clear) a card's colour: background + legible text/stripe tone
+  function applyCardColor(cardEl, n) {
+    const col = n.cardColor;
+    const tone = col ? col.text : null;
+    cardEl.style.background = col ? col.bg : "";
+    cardEl.style.borderColor = col ? col.bg : "";
+    cardEl.style.color = col ? col.text : "";
+    const title = cardEl.querySelector(".title"); if (title) title.style.color = col ? col.text : "";
+    const meta = cardEl.querySelector(".meta");
+    if (meta) { meta.style.color = col ? col.text : ""; meta.style.opacity = col ? ".72" : ""; }
+    const mini = cardEl.querySelector(".mini"); if (mini) mini.innerHTML = miniSvg(n, tone);
+    cardEl.classList.toggle("colored", !!col);
+  }
+
+  function miniSvg(n, tone) {
+    const stroke = tone || "var(--line)";
+    const doneCol = tone || "var(--ink)";
+    const emptyFill = tone || "var(--surface)";  // tone-coloured card: hollow uses card text tone? no — bg
+    const textCol = tone || "var(--faint)";
+    const holeFill = tone ? "none" : "var(--surface)";
     const shown = Math.min(n.nodes.length, 4);
     const gap = 26, top = 6, x = 11, r = 6;
     const h = top + (shown - 1) * gap + 8;
     let s = `<svg width="100%" height="${h}" viewBox="0 0 160 ${h}">`;
     const y0 = top + 2, y1 = top + (shown - 1) * gap + 2;
-    s += `<line x1="${x}" y1="${y0}" x2="${x}" y2="${y1}" stroke="var(--line)" stroke-width="2.5"/>`;
+    s += `<line x1="${x}" y1="${y0}" x2="${x}" y2="${y1}" stroke="${stroke}" stroke-width="2.5"/>`;
     for (let i = 0; i < shown; i++) {
       const cy = top + i * gap + 2;
       const done = n.nodes[i].done;
-      s += `<circle cx="${x}" cy="${cy}" r="${r}" fill="${done ? 'var(--ink)' : 'var(--surface)'}" stroke="${done ? 'var(--ink)' : 'var(--line)'}" stroke-width="2.5"/>`;
+      s += `<circle cx="${x}" cy="${cy}" r="${r}" fill="${done ? doneCol : holeFill}" stroke="${done ? doneCol : stroke}" stroke-width="2.5"/>`;
       const label = n.type === "reverse"
         ? (n.nodes[i].name || formatTime(n.nodes[i].time, startOfDay(n.nodes[0].time)) || String(i + 1))
         : (n.nodes[i].name || n.nodes[i].alias || String(i + 1));
-      s += `<text x="${x + 14}" y="${cy + 4}" font-size="11" fill="var(--faint)">${escapeHtml(trunc(label, 16))}</text>`;
+      s += `<text x="${x + 14}" y="${cy + 4}" font-size="11" fill="${textCol}"${tone ? ' opacity="0.85"' : ''}>${escapeHtml(trunc(label, 16))}</text>`;
     }
     if (n.nodes.length > shown) {
-      s += `<text x="${x - 3}" y="${y1 + 16}" font-size="11" fill="var(--faint)">+${n.nodes.length - shown}</text>`;
+      s += `<text x="${x - 3}" y="${y1 + 16}" font-size="11" fill="${textCol}">+${n.nodes.length - shown}</text>`;
     }
     s += `</svg>`;
     return s;
