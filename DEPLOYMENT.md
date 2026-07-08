@@ -1,10 +1,11 @@
 # Dotline — how it works and is deployed
 
-A linear notebook: each note is a vertical line of connected points running down
-the center of the screen. A tap on a dot toggles "done" (black fill). Dots are
-`<button>`s and fully keyboard-operable: Enter/Space toggles done,
-Delete/Backspace removes the point. The dot is dead-centre on every screen size
-(desktop and mobile) by design.
+A linear notebook: each note is a single vertical line of connected points. A
+tap on a dot toggles "done" (black fill). Dots are `<button>`s and fully
+keyboard-operable: Enter/Space toggles done, Delete/Backspace removes the point.
+The dots always sit exactly on the line; the line runs a touch left of screen
+centre (see `--shift`) so the right-hand labels get more room, on desktop and
+mobile alike.
 
 - **Free Dotline**: to the left of the dot — a short editable alias
   (auto-numbered 1, 2, 3…, can be replaced with your own word); to the right —
@@ -13,17 +14,22 @@ Delete/Backspace removes the point. The dot is dead-centre on every screen size
   top; each event below it is EARLIER (down = back in time), so a real up-arrow
   is drawn under every dot. Time (`HH:MM`) is shown on the left, event name on
   the right. New events default to −30 min from the previous one.
-- Three time modals share one clean pattern: a big "hero" value (the thing you
-  set) with a small secondary line (its consequence):
-  - **Edit time / Add event** — big time input + native date; small line shows
-    "N earlier/later" vs the point above (hidden for the anchor).
+- Three time modals share one clean pattern (no titles — the content is
+  self-evident): a big bold "hero" value (the thing you set) over a frosted-glass
+  panel, a small secondary line (its consequence), a subtle × top-right (clicking
+  outside also closes), and one round Apply button showing just a check.
+  - **Edit time / Add event** — big centred `HH:MM` **text** field (accepts
+    `13:30`, `1330`, `930`) + a ±6 h slider (synced with the time) + native date;
+    small line shows "N earlier/later" vs the point above (hidden for the anchor).
   - **Change interval** (tap the interval pill) — big editable interval
     (e.g. `−1 h 30 min`, sign allowed) + a ±6 h slider; small line shows
     `→ HH:MM`. Changing it shifts all later events; the anchor stays fixed.
   - Dates other than the anchor day render as `14:30 · Jul 8`.
 - The vertical axis sits slightly left of centre (`--shift` in `.spine`) to give
   the right-hand labels more room; the dots stay exactly on the line.
-- Link labels sit in the gap between dots.
+- Free-note connector: an empty link note is a small line-coloured dot on the
+  line; tap it to expand the editable note, leave it empty to collapse back.
+  Reverse connectors show the editable interval instead.
 - The dashed grey circle at the bottom adds a new dot.
 - Delete a point by dragging the dot sideways — the SVG string stretches, fades,
   and snaps. (Keyboard equivalent: focus the dot, press Delete/Backspace.)
@@ -47,7 +53,7 @@ use a token so the system stays consistent.
 | `--fs-sm`  | 13px | captions, buttons, secondary lines |
 | `--fs-base`| 15px | controls, inputs |
 | `--fs-md`  | 16px | primary content (item text) |
-| `--fs-lg`  | 20px | modal titles, mobile note title |
+| `--fs-lg`  | 20px | mobile note title, close × glyph |
 | `--fs-xl`  | 26px | screen H1, note title |
 | `--fs-display` | 34px | modal hero value (the big number you set) |
 
@@ -72,9 +78,9 @@ tabular-nums`.
 `prefers-color-scheme` and the `data-theme` override. **Layout:** `--shift`
 (axis offset left of centre), `--dot` (dot size).
 
-The three time modals share one pattern built only from these tokens: a big
-hero value (`--fs-xl`, mono) = the thing you set, a small sub (`--fs-sm`, sans,
-muted) = its consequence, `--fs-2xs` labels, `--fs-base` controls.
+The three time modals are built only from these tokens: a big hero value
+(`--fs-display`, `--w-bold`) = the thing you set, a small sub (`--fs-sm`, muted)
+= its consequence, `--fs-base` controls, round Apply in `--accent`.
 
 ---
 
@@ -222,6 +228,11 @@ hardcoded in HTML.
 ---
 
 ## 5. Notes for the future
+- **Covers (banner over a note + faint tint on the home card):** decided to add
+  later, not now. Preferred type = **uploaded photo**. That needs a real
+  image-upload endpoint + file storage on the server (the ≤2 MB notes JSON blob
+  can't hold photos). The cheap, no-server alternative is gradient/emoji presets
+  (an id stored in the note) — fall back to that if photo storage is overkill.
 - DB has no backup — add a cron `sqlite3 dotline.db .dump` if desired.
 - Sync is last-write-wins: editing from two devices at the same time will
   overwrite each other (fine for personal notes).
