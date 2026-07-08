@@ -118,6 +118,8 @@
     transition: border-color .15s, color .15s;
   }
   .auth-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .auth-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .auth-btn.primary:hover { background: var(--accent-strong); color: #fff; }
   .user-wrap { position: relative; }
   .avatar-btn {
     appearance: none;
@@ -648,6 +650,22 @@
   .node.no-stub-top::before { top: 50%; }
   .node.no-stub-bottom::before { bottom: 50%; }
   .node.no-stub-top.no-stub-bottom::before { display: none; }
+
+  /* real-time mode: a dashed "now" line across the board that moves as time passes */
+  .now-line {
+    position: absolute; left: -24px; right: -24px;
+    border-top: 2px dashed var(--accent);
+    z-index: 4; pointer-events: none;
+    transition: top .5s ease;
+  }
+  .now-label {
+    position: absolute; right: 22px; top: -10px;
+    background: var(--accent); color: #fff; white-space: nowrap;
+    font-size: var(--fs-2xs); font-weight: var(--w-semibold);
+    padding: 2px 8px; border-radius: 8px;
+  }
+  @media (max-width: 640px) { .now-line { left: -16px; right: -16px; } }
+
   .link-label {
     position: relative; z-index: 2;
     outline: none;
@@ -904,8 +922,10 @@
   // read-only view of a shared note (opened via ?s=<token>)
   let viewOnly = false;
   let sharedNote = null;
+  let nowTimer = null;   // ticks the "now" line in real-time mode
 
   function render() {
+    if (nowTimer) { clearInterval(nowTimer); nowTimer = null; }
     if (route.name === "shared") { viewOnly = true; renderNote(sharedNote); }
     else {
       viewOnly = false;
@@ -928,6 +948,15 @@
     } else if (route.name === "note") {
       const n = db.notes.find(x => x.id === route.noteId);
       if (n) {
+        // real-time mode toggle — timing notes only
+        if (n.type === "reverse") {
+          const live = document.createElement("button");
+          live.className = "auth-btn" + (n.realtime ? " primary" : "");
+          live.textContent = n.realtime ? "◉ Live" : "◎ Live";
+          live.title = "Real-time mode: proportional spacing + a moving now-line";
+          live.onclick = () => { n.realtime = !n.realtime; save(); render(); };
+          slot.appendChild(live);
+        }
         const b = document.createElement("button");
         b.className = "auth-btn"; b.textContent = "Share";
         b.title = "Share note"; b.setAttribute("aria-label", "Share note");
@@ -1520,11 +1549,46 @@
     });
     if (!viewOnly) spine.appendChild(reverseGhostRow(n, spine));
     applyArrowStubs(spine, n);
+    if (n.realtime) {
+      positionNowLine(spine, n);
+      nowTimer = setInterval(() => positionNowLine(spine, n), 30000);
+    }
     if (!viewOnly && focusIndex != null) {
       const labels = spine.querySelectorAll(".node-label");
       const t = labels[focusIndex];
       if (t) { t.classList.add("fade-in"); placeCaretEnd(t); }
     }
+  }
+
+  // place the dashed "now" line at the vertical position of the current time,
+  // interpolating between the two dots whose times bracket now (real-time mode)
+  function positionNowLine(spine, n) {
+    let line = spine.querySelector(".now-line");
+    if (n.type !== "reverse" || n.nodes.length < 2) { if (line) line.remove(); return; }
+    if (!line) {
+      line = document.createElement("div");
+      line.className = "now-line";
+      line.innerHTML = `<span class="now-label"></span>`;
+      spine.appendChild(line);
+    }
+    const now = Date.now();
+    const els = Array.from(spine.querySelectorAll(".node:not(.ghost)"));
+    const sr = spine.getBoundingClientRect();
+    const yOf = (el) => { const d = el.querySelector(".dot") || el; const r = d.getBoundingClientRect(); return r.top + r.height / 2 - sr.top; };
+    let y = null;
+    for (let i = 0; i < n.nodes.length - 1; i++) {
+      const t0 = n.nodes[i].time, t1 = n.nodes[i + 1].time;
+      if (t0 === t1) continue;
+      if (now >= Math.min(t0, t1) && now <= Math.max(t0, t1)) {
+        const frac = (now - t0) / (t1 - t0);
+        y = yOf(els[i]) + frac * (yOf(els[i + 1]) - yOf(els[i]));
+        break;
+      }
+    }
+    if (y == null) { line.style.display = "none"; return; }  // now outside the plan's range
+    line.style.display = "";
+    line.style.top = y + "px";
+    line.querySelector(".now-label").textContent = "now " + formatTime(now, startOfDay(n.nodes[0].time));
   }
 
   function reverseNodeRow(n, node, i, spine) {
@@ -1645,6 +1709,11 @@
     // next earlier -> points UP at the upper dot; equal -> no arrow
     const dur = n.links[i].duration || 0;
     row.className = "link" + (dur > 0 ? " arr-down" : dur < 0 ? " arr-up" : "");
+    // real-time mode: segment height is proportional to its duration (1h < 2h)
+    if (n.realtime) {
+      const mins = Math.abs(dur) / MS_MIN;
+      row.style.minHeight = Math.max(46, Math.min(380, Math.round(mins * 1.5))) + "px";
+    }
     const lab = document.createElement("div");
     lab.className = "link-label interval";
     lab.setAttribute("data-ph", "interval");
