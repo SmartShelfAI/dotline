@@ -314,8 +314,9 @@
   .dot:focus-visible { outline: 2px solid var(--line); outline-offset: 3px; }
   .node.done .dot { background: var(--ink); border-color: var(--ink); }
 
-  /* reverse anchor arrow: upward arrow below the first dot */
-  .spine.reverse > .node:first-of-type .dot::after {
+  /* reverse timeline: an upward arrow below EVERY dot — time flows up, the list
+     goes back in time as you move down */
+  .spine.reverse > .node .dot::after {
     content: "";
     position: absolute;
     top: calc(100% + 4px);
@@ -1211,7 +1212,8 @@
   function openTimePicker(opts) {
     const anchorDay = startOfDay(opts.anchorTime);
     const previousTime = opts.previousTime != null ? opts.previousTime : opts.anchorTime;
-    const currentTime = opts.currentTime != null ? opts.currentTime : (previousTime + 60 * MS_MIN);
+    // reverse timeline: a new event defaults to half an hour EARLIER than the previous one
+    const currentTime = opts.currentTime != null ? opts.currentTime : (previousTime - 30 * MS_MIN);
     let selectedDay = startOfDay(currentTime);
     let selectedMin = minutesSinceMidnight(currentTime);
     let offsetMs = 0;
