@@ -99,7 +99,13 @@ The three time modals are built only from these tokens: a big hero value
 | `backend/app.py` | Flask API (Google sign-in, sessions, notes in SQLite). |
 | `backend/dotline-api.service` | systemd unit. |
 | `backend/dotline.env.example` | Env template with Google Client ID. |
-| `DEPLOYMENT.md` | This file. |
+| `DEPLOYMENT.md` | This file (how it works + deploy + design system). |
+| `DECISIONS.md` | **Log of what/why was decided** — read for recent UI rationale. |
+| `PLAN_CHECK_SPEC.md` | Future "Check Plan" feature spec (not built yet). |
+
+> For the rationale behind recent interaction/visual choices (arrows, drag
+> directions, colours, fonts, home carousel, highlight), see **DECISIONS.md** —
+> it is the source of truth for "why", kept ahead of the prose below.
 
 ### Rebuild and deploy the frontend
 ```bash
