@@ -256,6 +256,7 @@
 
   /* ---------- home sections + horizontal carousel ---------- */
   .section { margin-bottom: 30px; }
+  .section + .section { margin-top: 26px; }   /* extra air above "Timed dotline" */
   .section-head {
     display: flex; align-items: center; gap: 14px;
     background: transparent; border: none; padding: 0; margin: 0 0 14px;
@@ -285,10 +286,11 @@
     .carousel::-webkit-scrollbar { display: none; }
     /* spacers so the first/last card can sit dead-centre with an ear each side */
     .carousel::before, .carousel::after { content: ""; flex: 0 0 9%; }
+    .carousel::before, .carousel::after { flex-basis: 13%; }
     .carousel .card {
-      flex: 0 0 82%; width: auto;
+      flex: 0 0 70%; width: auto; padding: 14px;
       scroll-snap-align: center; scroll-snap-stop: always; /* page one card per swipe */
-      aspect-ratio: 1.1 / 1; min-height: 0; overflow: hidden; /* squarer + ears */
+      aspect-ratio: 1.4 / 1; min-height: 0; overflow: hidden; /* smaller, less bulky + ears */
     }
   }
 
@@ -317,6 +319,34 @@
     font-size: var(--fs-sm); font-weight: var(--w-medium); transition: color .15s, border-color .15s;
   }
   .back-btn:hover { color: var(--ink); border-color: var(--faint); }
+  /* Share button (top-right of the editor) + shared read-only chrome */
+  .share-btn {
+    margin-left: auto; flex: none;
+    border: 1px solid var(--hairline); background: var(--surface); color: var(--ink);
+    height: 34px; padding: 0 15px; border-radius: 10px; cursor: pointer;
+    font-size: var(--fs-sm); font-weight: var(--w-medium);
+    transition: border-color .15s, color .15s, background .15s;
+  }
+  .share-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .share-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .share-btn.primary:hover { background: var(--accent-strong); color: #fff; }
+  .share-banner {
+    margin: -4px 0 16px; padding: 9px 14px; border-radius: 10px; text-align: center;
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+    color: var(--accent); font-size: var(--fs-sm); font-weight: var(--w-medium);
+  }
+  .share-modal { max-width: 420px; }
+  .share-title { font-size: var(--fs-lg); font-weight: var(--w-semibold); margin-bottom: 14px; }
+  .share-url {
+    width: 100%; height: 42px; padding: 0 12px; border-radius: 10px; margin-bottom: 14px;
+    border: 1px solid var(--hairline); background: var(--surface-2); color: var(--ink);
+    font-size: var(--fs-sm);
+  }
+  .share-copy {
+    width: 100%; height: 44px; border-radius: 12px; border: none; cursor: pointer;
+    background: var(--accent); color: #fff; font-size: var(--fs-base); font-weight: var(--w-medium);
+  }
+  .share-copy:hover { background: var(--accent-strong); }
   .note-title {
     font-size: var(--fs-xl); font-weight: var(--w-semibold); letter-spacing: -0.02em;
     border: none; background: transparent; color: var(--ink);
@@ -864,7 +894,13 @@
   let route = { name: "home", noteId: null };
   function go(name, noteId) { route = { name, noteId: noteId || null }; render(); }
 
+  // read-only view of a shared note (opened via ?s=<token>)
+  let viewOnly = false;
+  let sharedNote = null;
+
   function render() {
+    if (route.name === "shared") { viewOnly = true; renderNote(sharedNote); return; }
+    viewOnly = false;
     if (route.name === "note") renderNote(db.notes.find(n => n.id === route.noteId));
     else renderHome();
   }
@@ -1059,10 +1095,11 @@
 
     const spine = el.querySelector("#spine");
 
+    applyEditorChrome(el, n);
     swap(el);
     drawSpine(spine, n);
     autoResize(title);
-    if (n.autoTitle) setTimeout(() => title.focus(), 0);
+    if (!viewOnly && n.autoTitle) setTimeout(() => title.focus(), 0);
   }
 
   function renderReverseNote(n) {
@@ -1093,10 +1130,86 @@
 
     const spine = el.querySelector("#spine");
 
+    applyEditorChrome(el, n);
     swap(el);
     drawReverseSpine(spine, n);
     autoResize(title);
-    if (n.autoTitle) setTimeout(() => title.focus(), 0);
+    if (!viewOnly && n.autoTitle) setTimeout(() => title.focus(), 0);
+  }
+
+  // add the Share button (top-right); in read-only shared view swap it for a
+  // "Make a copy" action, lock the title, and show a banner
+  function applyEditorChrome(el, n) {
+    const head = el.querySelector(".editor-head");
+    const back = el.querySelector(".back-btn");
+    const title = el.querySelector(".note-title");
+    const share = document.createElement("button");
+    share.className = "share-btn";
+    head.appendChild(share);
+    if (viewOnly) {
+      const toggle = el.querySelector(".arrow-toggle");
+      if (toggle) toggle.remove();
+      if (title) title.readOnly = true;
+      back.textContent = "‹ Close";
+      back.onclick = exitShare;
+      share.textContent = "Make a copy";
+      share.classList.add("primary");
+      share.onclick = () => makeCopyOfShared(n);
+      const banner = document.createElement("div");
+      banner.className = "share-banner";
+      banner.textContent = "Shared note · read-only";
+      el.insertBefore(banner, el.querySelector(".board"));
+    } else {
+      share.textContent = "Share";
+      share.title = "Share"; share.setAttribute("aria-label", "Share note");
+      share.onclick = () => onShare(n);
+    }
+  }
+
+  async function onShare(n) {
+    try {
+      const r = await api("POST", "/share", { note: n });
+      showShare(location.origin + location.pathname + "?s=" + r.token);
+    } catch (e) { alert("Could not create a share link."); }
+  }
+
+  function showShare(url) {
+    const overlay = document.createElement("div"); overlay.className = "tp-overlay";
+    const modal = document.createElement("div"); modal.className = "tp-modal share-modal";
+    modal.innerHTML = `
+      <button class="tp-close" type="button" aria-label="Close">✕</button>
+      <div class="share-title">Share this note</div>
+      <input class="share-url" readonly value="${escapeAttr(url)}" />
+      <button class="share-copy" type="button">Copy link</button>`;
+    const close = () => overlay.remove();
+    modal.querySelector(".tp-close").onclick = close;
+    overlay.onclick = (e) => { if (e.target === overlay) close(); };
+    const urlInput = modal.querySelector(".share-url");
+    const copyBtn = modal.querySelector(".share-copy");
+    copyBtn.onclick = async () => {
+      try { await navigator.clipboard.writeText(url); }
+      catch (e) { urlInput.select(); document.execCommand("copy"); }
+      copyBtn.textContent = "Copied ✓";
+      setTimeout(close, 700);
+    };
+    overlay.appendChild(modal); document.body.appendChild(overlay);
+    setTimeout(() => urlInput.select(), 0);
+  }
+
+  function exitShare() {
+    history.replaceState(null, "", location.pathname);
+    viewOnly = false; sharedNote = null; go("home");
+  }
+
+  function makeCopyOfShared(n) {
+    const copy = JSON.parse(JSON.stringify(n));
+    copy.id = uid();
+    copy.autoNum = nextAutoNum(copy.type === "reverse");
+    copy.autoTitle = false;
+    if (Array.isArray(copy.nodes)) copy.nodes.forEach(nd => nd.id = uid());
+    history.replaceState(null, "", location.pathname);
+    viewOnly = false; sharedNote = null;
+    db.notes.unshift(copy); save(); go("note", copy.id);
   }
 
   function autoResize(ta) {
@@ -1114,9 +1227,9 @@
       spine.appendChild(nodeRow(n, node, i, spine));
       if (i < n.nodes.length - 1) spine.appendChild(linkRow(n, i));
     });
-    spine.appendChild(ghostRow(n, spine));
+    if (!viewOnly) spine.appendChild(ghostRow(n, spine));
     applyArrowStubs(spine, n);
-    if (focusIndex != null) {
+    if (!viewOnly && focusIndex != null) {
       const labels = spine.querySelectorAll(".node-label");
       const t = labels[focusIndex];
       if (t) { t.classList.add("fade-in"); placeCaretEnd(t); }
@@ -1167,7 +1280,7 @@
 
     const alias = document.createElement("div");
     alias.className = "node-alias";
-    alias.contentEditable = "true";
+    alias.contentEditable = viewOnly ? "false" : "true";
     alias.spellcheck = false;
     alias.setAttribute("data-ph", String(i + 1));
     setAliasDisplay(alias, node, i);
@@ -1190,7 +1303,7 @@
 
     const label = document.createElement("div");
     label.className = "node-label";
-    label.contentEditable = "true";
+    label.contentEditable = viewOnly ? "false" : "true";
     label.spellcheck = false;
     label.setAttribute("data-ph", "item name");
     setNameDisplay(label, node);
@@ -1208,20 +1321,22 @@
       if (e.key === "Enter") { e.preventDefault(); insertNewlineAtCaret(); node.name = label.textContent.trim(); save(); }
     };
 
-    // keyboard: Enter/Space toggles done, Delete/Backspace removes the node
-    dot.onkeydown = (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        toggleDone(node, row);
-      } else if (e.key === "Delete" || e.key === "Backspace") {
-        e.preventDefault();
-        removeNode(n, i, spine);
-      }
-    };
+    if (!viewOnly) {
+      // keyboard: Enter/Space toggles done, Delete/Backspace removes the node
+      dot.onkeydown = (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          toggleDone(node, row);
+        } else if (e.key === "Delete" || e.key === "Backspace") {
+          e.preventDefault();
+          removeNode(n, i, spine);
+        }
+      };
+      bindDotDrag(dot, row, n, node, i, spine);
+    }
 
-    bindDotDrag(dot, row, n, node, i, spine);
-
-    row.append(makeStar(node, row), alias, dot, label);
+    if (viewOnly) row.append(alias, dot, label);
+    else row.append(makeStar(node, row), alias, dot, label);
     return row;
   }
 
@@ -1261,6 +1376,16 @@
     // remove only the connector element, keep any .arrow
     const prev = row.querySelector(".link-add, .link-label");
     if (prev) prev.remove();
+    // read-only: show the note text if any, otherwise nothing (no add affordance)
+    if (viewOnly) {
+      const t = (n.links[i] && n.links[i].label) || "";
+      if (t) {
+        const lab = document.createElement("div");
+        lab.className = "link-label"; lab.textContent = t;
+        row.appendChild(lab);
+      }
+      return;
+    }
     if (expanded) {
       const lab = document.createElement("div");
       lab.className = "link-label";
@@ -1348,9 +1473,9 @@
       spine.appendChild(reverseNodeRow(n, node, i, spine));
       if (i < n.nodes.length - 1) spine.appendChild(reverseLinkRow(n, i, spine));
     });
-    spine.appendChild(reverseGhostRow(n, spine));
+    if (!viewOnly) spine.appendChild(reverseGhostRow(n, spine));
     applyArrowStubs(spine, n);
-    if (focusIndex != null) {
+    if (!viewOnly && focusIndex != null) {
       const labels = spine.querySelectorAll(".node-label");
       const t = labels[focusIndex];
       if (t) { t.classList.add("fade-in"); placeCaretEnd(t); }
@@ -1383,22 +1508,24 @@
         alias.appendChild(hint);
       }
     }
-    alias.onclick = () => {
-      openTimePicker({
-        anchorTime: n.nodes[0].time,
-        previousTime: i > 0 ? n.nodes[i - 1].time : n.nodes[0].time,
-        currentTime: node.time,
-        isAnchor: i === 0,
-        onApply: (baseTime, duration) => {
-          node.time = baseTime;
-          if (i > 0 && n.links[i - 1]) n.links[i - 1].duration = duration;
-          updateReverseTimes(n);
-          save();
-          drawReverseSpine(spine, n);
-        }
-      });
-    };
-    alias.title = "Click to edit time";
+    if (!viewOnly) {
+      alias.onclick = () => {
+        openTimePicker({
+          anchorTime: n.nodes[0].time,
+          previousTime: i > 0 ? n.nodes[i - 1].time : n.nodes[0].time,
+          currentTime: node.time,
+          isAnchor: i === 0,
+          onApply: (baseTime, duration) => {
+            node.time = baseTime;
+            if (i > 0 && n.links[i - 1]) n.links[i - 1].duration = duration;
+            updateReverseTimes(n);
+            save();
+            drawReverseSpine(spine, n);
+          }
+        });
+      };
+      alias.title = "Click to edit time";
+    }
 
     const dot = document.createElement("button");
     dot.className = "dot";
@@ -1417,7 +1544,7 @@
 
     const label = document.createElement("div");
     label.className = "node-label";
-    label.contentEditable = "true";
+    label.contentEditable = viewOnly ? "false" : "true";
     label.spellcheck = false;
     label.setAttribute("data-ph", "event");
     setNameDisplay(label, node);
@@ -1449,19 +1576,21 @@
       }
     };
 
-    dot.onkeydown = (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        toggleDone(node, row);
-      } else if (e.key === "Delete" || e.key === "Backspace") {
-        e.preventDefault();
-        removeNode(n, i, spine, revOpts);
-      }
-    };
+    if (!viewOnly) {
+      dot.onkeydown = (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          toggleDone(node, row);
+        } else if (e.key === "Delete" || e.key === "Backspace") {
+          e.preventDefault();
+          removeNode(n, i, spine, revOpts);
+        }
+      };
+      bindDotDrag(dot, row, n, node, i, spine, revOpts);
+    }
 
-    bindDotDrag(dot, row, n, node, i, spine, revOpts);
-
-    row.append(makeStar(node, row), alias, dot, label);
+    if (viewOnly) row.append(alias, dot, label);
+    else row.append(makeStar(node, row), alias, dot, label);
     return row;
   }
 
@@ -1475,19 +1604,21 @@
     lab.className = "link-label interval";
     lab.setAttribute("data-ph", "interval");
     lab.textContent = formatDuration(n.links[i].duration || 0);
-    lab.onclick = () => {
-      openDurationPicker({
-        anchorTime: n.nodes[0].time,
-        previousTime: n.nodes[i].time,
-        currentDuration: n.links[i].duration || 0,
-        onApply: (durationMs) => {
-          n.links[i].duration = durationMs;
-          updateReverseTimes(n);
-          save();
-          drawReverseSpine(spine, n);
-        }
-      });
-    };
+    if (!viewOnly) {
+      lab.onclick = () => {
+        openDurationPicker({
+          anchorTime: n.nodes[0].time,
+          previousTime: n.nodes[i].time,
+          currentDuration: n.links[i].duration || 0,
+          onApply: (durationMs) => {
+            n.links[i].duration = durationMs;
+            updateReverseTimes(n);
+            save();
+            drawReverseSpine(spine, n);
+          }
+        });
+      };
+    }
     row.appendChild(lab);
     return row;
   }
@@ -2110,15 +2241,27 @@
   // expose the GSI callback globally so google can reach it
   window.onGoogleCredential = onGoogleCredential;
 
+  async function openSharedFromUrl() {
+    const tok = new URLSearchParams(location.search).get("s");
+    if (!tok) return false;
+    try {
+      const r = await api("GET", "/shared/" + encodeURIComponent(tok));
+      if (r && r.note) { sharedNote = r.note; route = { name: "shared" }; render(); return true; }
+    } catch (e) { /* not found / offline → fall back to normal */ }
+    return false;
+  }
+
   async function boot() {
-    render(); // instant local render (guest / cached)
+    const shared = await openSharedFromUrl();
+    if (!shared) render(); // instant local render (guest / cached)
     try {
       const cfg = await api("GET", "/config");
       auth.clientId = cfg.googleClientId || "";
       ensureGoogleInit();
       try {
         const me = await api("GET", "/me");
-        if (me && me.user) { await onLoggedIn(me.user, false); }
+        if (me && me.user && !shared) { await onLoggedIn(me.user, false); }
+        else if (me && me.user) { auth.user = me.user; }
       } catch (e) { /* 401 → guest */ }
     } catch (e) { /* backend unreachable → local-only mode */ }
     updateAuthUI();

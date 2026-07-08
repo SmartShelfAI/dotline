@@ -51,6 +51,10 @@ def init_db():
             user_id INTEGER PRIMARY KEY,
             json TEXT,
             updated TEXT);
+        CREATE TABLE IF NOT EXISTS shares(
+            token TEXT PRIMARY KEY,
+            note TEXT,
+            created TEXT);
         """
     )
     c.commit()
@@ -197,6 +201,34 @@ def put_notes():
     c.commit()
     c.close()
     return jsonify({"ok": True, "updated": now()})
+
+
+# ---- sharing: immutable snapshot of a single note, readable without auth ----
+@app.post("/api/share")
+def create_share():
+    data = request.get_json(silent=True) or {}
+    note = data.get("note")
+    if not isinstance(note, dict) or not isinstance(note.get("nodes"), list):
+        return jsonify({"error": "bad note"}), 400
+    blob = json.dumps(note)
+    if len(blob) > 500_000:
+        return jsonify({"error": "too big"}), 413
+    tok = secrets.token_urlsafe(9)
+    c = db()
+    c.execute("INSERT INTO shares(token, note, created) VALUES(?,?,?)", (tok, blob, now()))
+    c.commit()
+    c.close()
+    return jsonify({"token": tok})
+
+
+@app.get("/api/shared/<token>")
+def get_share(token):
+    c = db()
+    row = c.execute("SELECT note FROM shares WHERE token = ?", (token,)).fetchone()
+    c.close()
+    if not row:
+        return jsonify({"error": "not found"}), 404
+    return jsonify({"note": json.loads(row["note"])})
 
 
 @app.get("/api/health")
