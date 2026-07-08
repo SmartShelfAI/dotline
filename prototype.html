@@ -205,7 +205,7 @@
     font-size: var(--fs-2xs); color: var(--faint);
     letter-spacing: .03em; text-transform: uppercase;
   }
-  .card .mini { margin-top: auto; padding-top: 14px; }
+  .card .mini { margin-top: 0; padding-top: 14px; }
   .card .card-del {
     position: absolute; top: 8px; right: 8px;
     width: 32px; height: 32px; border-radius: 10px;
@@ -548,12 +548,20 @@
     display: block; position: absolute;
     left: calc(50% - var(--shift)); transform: translateX(-50%);
     width: 14px; height: 10px;
-    background: var(--surface);   /* board colour — erases the rail here */
     z-index: 1; pointer-events: none;
   }
-  /* -4px keeps the mask 1px clear of the dot (dot sits 5px past the link edge) */
-  .link.arr-down .arrow { bottom: -4px; }   /* near the lower dot */
-  .link.arr-up .arrow   { top: -4px; }       /* near the upper dot */
+  /* 6px gap keeps the arrow a few pixels clear of the dot so the circle stays
+     clean and round in every theme/state (normal, highlight, done, dark/light).
+     The ::before block is the same colour as the page background and erases the
+     rail both under the arrow icon and in the gap toward the dot. */
+  .link.arr-down .arrow { bottom: 6px; }   /* near the lower dot */
+  .link.arr-up .arrow   { top: 6px; }       /* near the upper dot */
+  .link .arrow::before {
+    content: ""; position: absolute; left: 50%; transform: translateX(-50%);
+    width: 14px; height: 18px; background: var(--surface);
+  }
+  .link.arr-down .arrow::before { bottom: -8px; }
+  .link.arr-up .arrow::before   { top: -8px; }
   .link .arrow::after {
     content: ""; position: absolute; left: 50%; transform: translateX(-50%);
     width: 0; height: 0;
@@ -927,7 +935,7 @@
         <button class="back-btn">‹ Notes</button>
         <textarea class="note-title" placeholder="Note title" rows="1"></textarea>
         <div class="arrow-toggle" role="group" aria-label="Line arrows">
-          <button data-arrow="none" title="No arrows">—</button>
+          <button data-arrow="none" title="No arrows">┃</button>
           <button data-arrow="down" title="Arrows point down">↓</button>
           <button data-arrow="up" title="Arrows point up">↑</button>
         </div>
@@ -1717,8 +1725,13 @@
 
   function getDotCenter(row, wire) {
     const dot = row.querySelector(".dot");
-    const dr = dot.getBoundingClientRect();
     const wr = wire.getBoundingClientRect();
+    if (!dot) {
+      // ghost add-node has no .dot; use the row center
+      const rr = row.getBoundingClientRect();
+      return { x: rr.left + rr.width / 2 - wr.left, y: rr.top + rr.height / 2 - wr.top };
+    }
+    const dr = dot.getBoundingClientRect();
     return { x: dr.left + dr.width / 2 - wr.left, y: dr.top + dr.height / 2 - wr.top };
   }
 
@@ -1729,8 +1742,8 @@
     if (dragState == null || dx == null) return;
     const nodes = Array.from(spine.querySelectorAll(".node:not(.ghost)"));
     if (nodes.length < 2) return;
+    const ghostNode = spine.querySelector(".node.ghost");
     const threshold = 120;
-    const overThreshold = Math.abs(dx) > threshold;
     const i = draggedIndex;
 
     function pathSeg(a, b) {
@@ -1753,6 +1766,11 @@
     if (i < nodes.length - 1) {
       const a = getDotCenter(nodes[i], wire);
       const b = getDotCenter(nodes[i + 1], wire);
+      wire.appendChild(pathSeg(a, b));
+    } else if (i === nodes.length - 1 && ghostNode) {
+      // dragging the last real dot: pull the dashed segment to the ghost add-node
+      const a = getDotCenter(nodes[i], wire);
+      const b = getDotCenter(ghostNode, wire);
       wire.appendChild(pathSeg(a, b));
     }
   }
@@ -1785,6 +1803,11 @@
       neighbors = [row];
       if (i > 0) { neighbors.push(nodes[i - 1]); neighbors.push(links[i - 1]); }
       if (i < nodes.length - 1) { neighbors.push(links[i]); neighbors.push(nodes[i + 1]); }
+      else {
+        // dragging the last dot: hide the dashed link to the ghost add-node
+        const ghostLink = spine.querySelector(".link.ghost");
+        if (ghostLink) neighbors.push(ghostLink);
+      }
       neighbors.forEach(el => el.classList.add("wire-hidden"));
       addHints();
       dragState = { row, nodeIndex: i, startX: e.clientX, dx: 0, spine, snapping: false };
