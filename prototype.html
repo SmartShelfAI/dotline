@@ -652,15 +652,25 @@
   .node.no-stub-bottom::before { bottom: 50%; }
   .node.no-stub-top.no-stub-bottom::before { display: none; }
 
-  /* real-time mode: a dashed "now" line across the board that moves as time passes */
+  /* real-time mode: a dashed "now" line across the board that moves as time passes.
+     Sits BEHIND the text (z-index 1 < nodes) and fades toward the background in
+     the middle (where it would cross text/dots) so it never strikes through. */
   .now-line {
     position: absolute; left: -24px; right: -24px;
-    border-top: 2px dashed var(--accent);
-    z-index: 4; pointer-events: none;
+    z-index: 1; pointer-events: none;
     transition: top .5s ease;
   }
+  .now-line::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px;
+    background: linear-gradient(to right,
+      var(--accent) 0%,
+      color-mix(in srgb, var(--accent) 20%, var(--bg)) 50%,
+      var(--accent) 100%);
+    -webkit-mask: repeating-linear-gradient(to right, #000 0 7px, transparent 7px 13px);
+            mask: repeating-linear-gradient(to right, #000 0 7px, transparent 7px 13px);
+  }
   .now-label {
-    position: absolute; right: 22px; top: -10px;
+    position: absolute; right: 22px; top: -10px; z-index: 2;
     background: var(--accent); color: #fff; white-space: nowrap;
     font-size: var(--fs-2xs); font-weight: var(--w-semibold);
     padding: 2px 8px; border-radius: 8px;
