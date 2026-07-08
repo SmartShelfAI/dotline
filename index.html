@@ -265,9 +265,19 @@
     resize: none; overflow: hidden; line-height: 1.25;
     white-space: pre-wrap; word-wrap: break-word;
     field-sizing: content;
+    /* use a stack with reliable Cyrillic support for user-entered text */
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
   .note-title:focus { background: var(--surface-2); }
   .note-title::placeholder { color: var(--faint); }
+
+  /* editable/user-entered text fields need a Cyrillic-safe font stack */
+  .card .title,
+  .node-label,
+  .node-alias,
+  .link-label {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
 
   .board {
     background: var(--surface);
