@@ -1081,12 +1081,16 @@
     timeSpan.className = "alias-time";
     timeSpan.textContent = formatTime(node.time, anchorDay);
     alias.appendChild(timeSpan);
-    if (i > 0 && node.time < n.nodes[i - 1].time) {
-      row.classList.add("chrono-violation");
-      const hint = document.createElement("div");
-      hint.className = "chrono-hint";
-      hint.textContent = "not chronological";
-      alias.appendChild(hint);
+    if (i >= 2) {
+      const d1 = n.nodes[i - 1].time - n.nodes[i - 2].time;
+      const d2 = node.time - n.nodes[i - 1].time;
+      if (d1 !== 0 && d2 !== 0 && Math.sign(d1) !== Math.sign(d2)) {
+        row.classList.add("chrono-violation");
+        const hint = document.createElement("div");
+        hint.className = "chrono-hint";
+        hint.textContent = "not chronological";
+        alias.appendChild(hint);
+      }
     }
     alias.onclick = () => {
       openTimePicker({
