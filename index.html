@@ -260,21 +260,27 @@
     .note-title { font-size: 20px; }
   }
 
-  /* centered vertical line with stations — dot is always at 50% of the board */
-  .spine { --dot: 34px; position: relative; }
+  /* vertical line with stations — the axis sits a touch LEFT of centre so the
+     right-hand labels get more room. One --shift drives rail, dots, pill and "+" */
+  .spine { --dot: 34px; --shift: 28px; position: relative; }
   .node, .link { position: relative; z-index: 2; }
 
   /* rail runs vertically through the exact horizontal center */
   .node::before, .link::before {
     content: "";
     position: absolute;
-    left: 50%; transform: translateX(-50%);
+    left: calc(50% - var(--shift)); transform: translateX(-50%);
     width: 3px; background: var(--line);
     top: 0; bottom: 0;
     z-index: 0;
   }
   .spine > .node:first-of-type::before { top: 50%; }
   .node.ghost::before { display: none; }
+
+  /* reverse timeline: break the rail below each dot so the arrowhead reads as a
+     real arrow — rail only ABOVE the dot; below is gap → triangle → link shaft */
+  .spine.reverse .node::before { bottom: 50%; top: 0; }
+  .spine.reverse > .node:first-of-type::before { display: none; }
 
   /* SVG overlay used only while dragging a dot to draw the stressed string */
   .spine-wire {
@@ -298,7 +304,9 @@
      and wraps freely (no truncation) — the row grows and the line lengthens */
   .node {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    /* left column shrinks by --shift so the dot lands left of centre; the rail
+       above uses the same --shift so line and dots stay perfectly aligned */
+    grid-template-columns: calc(50% - var(--shift) - 14px - var(--dot) / 2) auto minmax(0, 1fr);
     align-items: center;
     column-gap: 14px;
     min-height: var(--dot);
@@ -419,6 +427,8 @@
   .link {
     display: flex; align-items: center; justify-content: center;
     min-height: 88px;
+    /* keep the pill centred on the shifted axis */
+    padding-right: calc(var(--shift) * 2);
   }
   .link-label {
     position: relative; z-index: 2;
@@ -442,7 +452,7 @@
     background: repeating-linear-gradient(var(--faint) 0 5px, transparent 5px 11px);
     width: 2px;
   }
-  .node.ghost { display: flex; align-items: center; justify-content: center; position: relative; }
+  .node.ghost { display: flex; align-items: center; justify-content: center; position: relative; padding-right: calc(var(--shift) * 2); }
   .add-dot {
     position: relative; z-index: 2;
     width: var(--dot); height: var(--dot); border-radius: 50%;
@@ -454,7 +464,7 @@
   .add-dot:hover { border-color: var(--line); color: var(--line); transform: scale(1.08); }
   .add-dot:focus-visible { outline: 2px solid var(--line); outline-offset: 3px; }
   .ghost-hint {
-    position: absolute; left: calc(50% + 22px);
+    position: absolute; left: calc(50% - var(--shift) + 22px);
     font-size: 12px; color: var(--faint); white-space: nowrap;
     opacity: 0; transition: opacity .12s; pointer-events: none;
   }
@@ -492,16 +502,19 @@
   .tp-title { font-size: 18px; font-weight: 640; margin-bottom: 18px; }
   .tp-field { margin-bottom: 16px; }
   .tp-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
-  .tp-time {
-    width: 100%; height: 44px; font-size: 18px; font-family: var(--mono);
-    border: 1px solid var(--hairline); border-radius: 10px;
-    padding: 0 10px; background: var(--surface-2); color: var(--ink);
-  }
   .tp-slider { width: 100%; accent-color: var(--line); }
-  .tp-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .tp-offset { width: 90px; height: 36px; font-size: 15px; font-family: var(--mono);
-    border: 1px solid var(--hairline); border-radius: 8px; padding: 0 8px;
-    background: var(--surface-2); color: var(--ink); }
+  /* shared big "hero" value = the thing being set; small sub = its consequence */
+  .tp-hero { text-align: center; margin: 4px 0 20px; }
+  .tp-hero input {
+    width: 100%; text-align: center;
+    font-size: 32px; font-weight: 640; font-family: var(--mono);
+    font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+    border: 1px solid transparent; border-radius: 12px;
+    background: transparent; color: var(--ink);
+    padding: 8px 6px; outline: none;
+  }
+  .tp-hero input:focus { background: var(--surface-2); border-color: var(--hairline); }
+  .tp-sub { margin-top: 4px; font-size: 14px; color: var(--muted); font-family: var(--sans); font-weight: 400; }
   .tp-date-button {
     position: relative;
     display: flex; align-items: center; justify-content: center;
@@ -513,13 +526,6 @@
     position: absolute; inset: 0; width: 100%; height: 100%;
     opacity: 0; cursor: pointer; border: none; padding: 0; margin: 0;
   }
-  .tp-preview {
-    background: var(--surface-2); border-radius: 12px;
-    padding: 16px; text-align: center; font-size: 16px; color: var(--muted);
-    margin: 8px 0 20px;
-  }
-  .tp-preview strong { display: block; color: var(--ink); font-size: 28px; font-variant-numeric: tabular-nums; margin-bottom: 4px; }
-  .tp-preview .tp-sub { font-size: 14px; color: var(--muted); }
   .tp-actions { display: flex; gap: 10px; }
   .tp-actions .tp-btn { flex: 1; height: 42px; border-radius: 10px; border: 1px solid var(--hairline);
     background: var(--surface-2); color: var(--ink); font-size: 15px; cursor: pointer; }
@@ -1004,6 +1010,7 @@
         anchorTime: n.nodes[0].time,
         previousTime: i > 0 ? n.nodes[i - 1].time : n.nodes[0].time,
         currentTime: node.time,
+        isAnchor: i === 0,
         onApply: (baseTime, duration) => {
           node.time = baseTime;
           if (i > 0 && n.links[i - 1]) n.links[i - 1].duration = duration;
@@ -1227,29 +1234,22 @@
   function openTimePicker(opts) {
     const anchorDay = startOfDay(opts.anchorTime);
     const previousTime = opts.previousTime != null ? opts.previousTime : opts.anchorTime;
-    // reverse timeline: a new event defaults to half an hour EARLIER than the previous one
-    const currentTime = opts.currentTime != null ? opts.currentTime : (previousTime - 30 * MS_MIN);
+    const isEdit = opts.currentTime != null;
+    const isAnchor = !!opts.isAnchor;
+    // a new event defaults to half an hour EARLIER than the previous one
+    const currentTime = isEdit ? opts.currentTime : (previousTime - 30 * MS_MIN);
     let selectedDay = startOfDay(currentTime);
     let selectedMin = minutesSinceMidnight(currentTime);
-    let offsetMs = 0;
 
     const overlay = document.createElement("div");
     overlay.className = "tp-overlay";
     const modal = document.createElement("div");
     modal.className = "tp-modal";
     modal.innerHTML = `
-      <div class="tp-title">${opts.currentTime != null ? "Edit time" : "Add event"}</div>
-      <div class="tp-field">
-        <div class="tp-label">Time</div>
-        <input class="tp-time" type="time" value="${formatTimeInput(selectedMin)}" />
-      </div>
-      <div class="tp-field tp-row">
-        <div class="tp-label">± offset</div>
-        <input class="tp-offset" type="text" value="0 min" />
-      </div>
-      <div class="tp-field">
-        <div class="tp-label">Shift ±6 h</div>
-        <input class="tp-slider" type="range" min="-6" max="6" step="0.25" value="0" />
+      <div class="tp-title">${isEdit ? "Edit time" : "Add event"}</div>
+      <div class="tp-hero">
+        <input class="tp-hero-time" type="time" value="${formatTimeInput(selectedMin)}" />
+        ${isAnchor ? "" : `<div class="tp-sub"></div>`}
       </div>
       <div class="tp-field tp-date">
         <div class="tp-label">Date</div>
@@ -1258,18 +1258,15 @@
           <input class="tp-date-input" type="date" value="${formatDateInput(selectedDay)}" />
         </label>
       </div>
-      <div class="tp-preview"></div>
       <div class="tp-actions">
         <button class="tp-btn cancel" type="button">Cancel</button>
         <button class="tp-btn primary apply" type="button">Apply</button>
       </div>`;
 
-    const timeInput = modal.querySelector(".tp-time");
-    const slider = modal.querySelector(".tp-slider");
-    const offsetInput = modal.querySelector(".tp-offset");
+    const timeInput = modal.querySelector(".tp-hero-time");
     const dateInput = modal.querySelector(".tp-date-input");
     const dateDisplay = modal.querySelector(".tp-date-display");
-    const preview = modal.querySelector(".tp-preview");
+    const sub = modal.querySelector(".tp-sub");
 
     function formatDateLabel(ts) {
       if (isSameDay(ts, Date.now())) return "Today";
@@ -1283,33 +1280,17 @@
       selectedMin = (h || 0) * 60 + (m || 0);
     }
 
-    function result() {
-      return selectedDay + selectedMin * MS_MIN + offsetMs;
+    function result() { return selectedDay + selectedMin * MS_MIN; }
+
+    // small secondary line: how far this event is from the point above
+    function updateSub() {
+      if (!sub) return;
+      const dur = result() - previousTime;
+      const mag = formatDuration(Math.abs(dur));
+      sub.textContent = dur === 0 ? "same time" : mag + (dur < 0 ? " earlier" : " later");
     }
 
-    function updatePreview() {
-      const base = result();
-      const dur = base - previousTime;
-      preview.innerHTML = `<strong>${formatTime(base, anchorDay)}</strong>${formatDuration(dur)} from previous`;
-    }
-
-    timeInput.oninput = () => { readTimeInput(); updatePreview(); };
-
-    slider.oninput = () => {
-      const v = parseFloat(slider.value) || 0;
-      offsetMs = v * 60 * MS_MIN;
-      offsetInput.value = formatDuration(offsetMs);
-      updatePreview();
-    };
-
-    offsetInput.oninput = () => {
-      const parsed = parseDuration(offsetInput.value);
-      if (parsed != null) {
-        offsetMs = parsed;
-        slider.value = Math.max(-6, Math.min(6, offsetMs / (60 * MS_MIN)));
-        updatePreview();
-      }
-    };
+    timeInput.oninput = () => { readTimeInput(); updateSub(); };
 
     dateInput.oninput = () => {
       if (dateInput.value) {
@@ -1317,7 +1298,7 @@
         selectedDay = new Date(y, mo - 1, d).getTime();
       }
       dateDisplay.textContent = formatDateLabel(selectedDay);
-      updatePreview();
+      updateSub();
     };
 
     modal.querySelector(".cancel").onclick = () => overlay.remove();
@@ -1331,10 +1312,10 @@
     overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
-    updatePreview();
+    updateSub();
   }
 
-  // ---------- duration picker modal (for reverse timeline intervals) ----------
+  // ---------- interval picker (reverse timeline) ----------
   function openDurationPicker(opts) {
     const anchorDay = startOfDay(opts.anchorTime);
     const previousTime = opts.previousTime;
@@ -1346,34 +1327,41 @@
     modal.className = "tp-modal";
     modal.innerHTML = `
       <div class="tp-title">Change interval</div>
-      <div class="tp-field tp-row">
-        <div class="tp-label">Interval</div>
-        <input class="tp-offset" type="text" value="${formatDuration(durationMs)}" readonly />
+      <div class="tp-hero">
+        <input class="tp-hero-value" type="text" value="${formatDuration(durationMs)}" />
+        <div class="tp-sub"></div>
       </div>
       <div class="tp-field">
-        <div class="tp-label">Hours</div>
+        <div class="tp-label">Adjust</div>
         <input class="tp-slider" type="range" min="-6" max="6" step="0.25" value="${Math.max(-6, Math.min(6, durationMs / (60 * MS_MIN)))}" />
       </div>
-      <div class="tp-preview"></div>
       <div class="tp-actions">
         <button class="tp-btn cancel" type="button">Cancel</button>
         <button class="tp-btn primary apply" type="button">Apply</button>
       </div>`;
 
+    const heroInput = modal.querySelector(".tp-hero-value");
     const slider = modal.querySelector(".tp-slider");
-    const offsetInput = modal.querySelector(".tp-offset");
-    const preview = modal.querySelector(".tp-preview");
+    const sub = modal.querySelector(".tp-sub");
+    let typing = false;
 
-    function updatePreview() {
-      const v = parseFloat(slider.value) || 0;
-      durationMs = v * 60 * MS_MIN;
-      offsetInput.value = formatDuration(durationMs);
-      const nextTime = previousTime + durationMs;
-      // the interval is the hero here; the resulting time is small secondary info
-      preview.innerHTML = `<strong>${formatDuration(durationMs)}</strong><span class="tp-sub">→ ${formatTime(nextTime, anchorDay)}</span>`;
-    }
+    function syncSlider() { slider.value = Math.max(-6, Math.min(6, durationMs / (60 * MS_MIN))); }
+    function updateSub() { sub.textContent = "→ " + formatTime(previousTime + durationMs, anchorDay); }
+    function refreshHero() { if (!typing) heroInput.value = formatDuration(durationMs); }
 
-    slider.oninput = updatePreview;
+    slider.oninput = () => {
+      durationMs = (parseFloat(slider.value) || 0) * 60 * MS_MIN;
+      refreshHero(); updateSub();
+    };
+    heroInput.onfocus = () => { typing = true; };
+    heroInput.oninput = () => {
+      // allow a leading minus for the reverse direction (parseDuration is unsigned)
+      const s = heroInput.value.trim();
+      const neg = /^[-−]/.test(s);
+      const parsed = parseDuration(s.replace(/^[-−+]\s*/, ""));
+      if (parsed != null) { durationMs = neg ? -parsed : parsed; syncSlider(); updateSub(); }
+    };
+    heroInput.onblur = () => { typing = false; heroInput.value = formatDuration(durationMs); };
 
     modal.querySelector(".cancel").onclick = () => overlay.remove();
     modal.querySelector(".apply").onclick = () => {
@@ -1384,7 +1372,7 @@
     overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
-    updatePreview();
+    updateSub();
   }
 
   // ---------- swipe-to-delete wire (drawn over CSS rail only while dragging) ----------
