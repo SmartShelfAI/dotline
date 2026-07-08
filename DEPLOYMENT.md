@@ -10,13 +10,19 @@ Delete/Backspace removes the point. The dot is dead-centre on every screen size
   (auto-numbered 1, 2, 3…, can be replaced with your own word); to the right —
   the main item name.
 - **Reverse Dotline** (`type: "reverse"`): the first event is the anchor at the
-  top. Each following event is added with an interval from the previous one.
-  Time (`HH:MM`) is shown on the left, event name on the right. The interval
-  between dots is editable (e.g. "1 h 30 min"); changing it shifts all later
-  events while the anchor stays fixed. Tapping the "+" button or an existing
-  time opens a modal picker with a time input, a ±12 h slider, a separate ±N
-  hours field, and a native date picker. Dates other than the anchor day render
-  as `14:30 · Jul 8`.
+  top; each event below it is EARLIER (down = back in time), so a real up-arrow
+  is drawn under every dot. Time (`HH:MM`) is shown on the left, event name on
+  the right. New events default to −30 min from the previous one.
+- Three time modals share one clean pattern: a big "hero" value (the thing you
+  set) with a small secondary line (its consequence):
+  - **Edit time / Add event** — big time input + native date; small line shows
+    "N earlier/later" vs the point above (hidden for the anchor).
+  - **Change interval** (tap the interval pill) — big editable interval
+    (e.g. `−1 h 30 min`, sign allowed) + a ±6 h slider; small line shows
+    `→ HH:MM`. Changing it shifts all later events; the anchor stays fixed.
+  - Dates other than the anchor day render as `14:30 · Jul 8`.
+- The vertical axis sits slightly left of centre (`--shift` in `.spine`) to give
+  the right-hand labels more room; the dots stay exactly on the line.
 - Link labels sit in the gap between dots.
 - The dashed grey circle at the bottom adds a new dot.
 - Delete a point by dragging the dot sideways — the SVG string stretches, fades,
