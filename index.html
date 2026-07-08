@@ -466,6 +466,23 @@
   /* while dragging a dot to delete, hide the bare connector dot so it doesn't
      hang beside the stretched string (a text label, if any, stays put) */
   .link.wire-hidden .link-add { opacity: 0; }
+
+  /* directional arrowhead on a timing segment — points the way time flows:
+     down toward the lower dot (next is later), up toward the upper dot (earlier) */
+  .spine.reverse .link.arr-down::after,
+  .spine.reverse .link.arr-up::after {
+    content: "";
+    position: absolute;
+    left: calc(50% - var(--shift));
+    transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    z-index: 1; pointer-events: none;
+  }
+  .spine.reverse .link.arr-down::after { bottom: 7px; border-top: 9px solid var(--line); }
+  .spine.reverse .link.arr-up::after { top: 7px; border-bottom: 9px solid var(--line); }
+  .spine.reverse .link.wire-hidden::after { opacity: 0; }
   .link-label {
     position: relative; z-index: 2;
     outline: none;
@@ -510,6 +527,8 @@
 
   /* mini preview on cards */
   .mini svg { display: block; overflow: visible; }
+  /* var() doesn't work in SVG attributes — set the preview font via CSS instead */
+  .mini svg text { font-family: var(--sans); letter-spacing: 0; }
 
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; }
@@ -615,12 +634,14 @@
       let raw = JSON.parse(localStorage.getItem(STORE));
       if (raw && Array.isArray(raw.notes)) {
         migrateReverseTimes(raw.notes);
+        migrateAutoNums(raw.notes);
         return raw;
       }
       // migrate from the old "throughline.v1" key so existing notes survive the rename
       const old = JSON.parse(localStorage.getItem("throughline.v1"));
       if (old && Array.isArray(old.notes)) {
         migrateReverseTimes(old.notes);
+        migrateAutoNums(old.notes);
         localStorage.setItem(STORE, JSON.stringify(old));
         return old;
       }
@@ -656,6 +677,24 @@
         });
       }
     });
+  }
+  // give still-default titles a stable per-type number (fixes old "Timing 1" dupes)
+  function migrateAutoNums(notes) {
+    let nFree = 0, nRev = 0;
+    notes.forEach(x => {
+      if (typeof x.autoNum === "number") {
+        if (x.type === "reverse") nRev = Math.max(nRev, x.autoNum);
+        else nFree = Math.max(nFree, x.autoNum);
+      }
+    });
+    for (let i = notes.length - 1; i >= 0; i--) {   // oldest first
+      const x = notes[i];
+      if (x.autoTitle && typeof x.autoNum !== "number") {
+        const rev = x.type === "reverse";
+        x.autoNum = rev ? ++nRev : ++nFree;
+        x.title = (rev ? "Timing " : "Dot note ") + x.autoNum;
+      }
+    }
   }
   function save() {
     localStorage.setItem(STORE, JSON.stringify(db));
@@ -706,7 +745,7 @@
     const el = document.createElement("div");
     el.innerHTML = `
       <div class="screen-head">
-        <h1>Free Dotline</h1>
+        <h1>Dotline</h1>
         <p>Each note is one line of connected points.</p>
       </div>
       <div class="grid" id="grid"></div>
@@ -780,28 +819,31 @@
     return s;
   }
 
+  // stable auto-number per type (survives reordering; gaps after delete are fine)
+  function isReverse(n) { return n.type === "reverse"; }
+  function nextAutoNum(reverse) {
+    let max = 0;
+    db.notes.forEach(x => {
+      if (isReverse(x) === reverse && typeof x.autoNum === "number" && x.autoNum > max) max = x.autoNum;
+    });
+    return max + 1;
+  }
+  function autoTitleFor(n) {
+    if (typeof n.autoNum !== "number") n.autoNum = nextAutoNum(isReverse(n));
+    return (isReverse(n) ? "Timing " : "Dot note ") + n.autoNum;
+  }
+
   function newNote() {
-    const n = {
-      id: uid(),
-      type: "free",
-      title: "Dot note " + (db.notes.filter(x => x.type !== "reverse").length + 1),
-      autoTitle: true,
-      nodes: [ { id: uid(), name: "" } ],
-      links: []
-    };
+    const n = { id: uid(), type: "free", autoNum: nextAutoNum(false), autoTitle: true,
+      nodes: [ { id: uid(), name: "" } ], links: [] };
+    n.title = autoTitleFor(n);
     db.notes.unshift(n); save(); go("note", n.id);
   }
 
   function newReverseNote() {
-    const idx = db.notes.filter(x => x.type === "reverse").length + 1;
-    const n = {
-      id: uid(),
-      type: "reverse",
-      title: "Timing " + idx,
-      autoTitle: true,
-      nodes: [ { id: uid(), name: "", time: floorMin(Date.now()) } ],
-      links: []
-    };
+    const n = { id: uid(), type: "reverse", autoNum: nextAutoNum(true), autoTitle: true,
+      nodes: [ { id: uid(), name: "", time: floorMin(Date.now()) } ], links: [] };
+    n.title = autoTitleFor(n);
     db.notes.unshift(n); save(); go("note", n.id);
   }
 
@@ -826,9 +868,8 @@
     };
     title.onblur = () => {
       if (!title.value.trim()) {
-        const idx = db.notes.filter(x => x.type !== "reverse").findIndex(x => x.id === n.id) + 1;
-        n.title = "Dot note " + idx;
         n.autoTitle = true;
+        n.title = autoTitleFor(n);
         title.value = n.title;
         save();
         autoResize(title);
@@ -861,9 +902,8 @@
     };
     title.onblur = () => {
       if (!title.value.trim()) {
-        const idx = db.notes.filter(x => x.type === "reverse").findIndex(x => x.id === n.id) + 1;
-        n.title = "Timing " + idx;
         n.autoTitle = true;
+        n.title = autoTitleFor(n);
         title.value = n.title;
         save();
         autoResize(title);
@@ -1189,7 +1229,10 @@
 
   function reverseLinkRow(n, i, spine) {
     const row = document.createElement("div");
-    row.className = "link";
+    // arrow follows time: next later than prev -> points DOWN at the lower dot;
+    // next earlier -> points UP at the upper dot; equal -> no arrow
+    const dur = n.links[i].duration || 0;
+    row.className = "link" + (dur > 0 ? " arr-down" : dur < 0 ? " arr-up" : "");
     const lab = document.createElement("div");
     lab.className = "link-label interval";
     lab.setAttribute("data-ph", "interval");
