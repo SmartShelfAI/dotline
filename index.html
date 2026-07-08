@@ -250,6 +250,41 @@
   }
   .card.add .add-label { font-size: var(--fs-sm); font-weight: var(--w-medium); }
 
+  /* ---------- home sections + horizontal carousel ---------- */
+  .section { margin-bottom: 30px; }
+  .section-head {
+    display: flex; align-items: center; gap: 14px;
+    background: transparent; border: none; padding: 0; margin: 0 0 14px;
+    cursor: pointer; color: var(--ink);
+  }
+  .section-plus {
+    width: 46px; height: 46px; border-radius: 50%; flex: none;
+    border: 2px dashed var(--faint); color: var(--muted);
+    display: grid; place-items: center; font-size: var(--fs-xl); font-weight: var(--w-regular);
+    transition: border-color .15s, color .15s, transform .1s;
+  }
+  .section-head:hover .section-plus { border-color: var(--accent); color: var(--accent); }
+  .section-head:active .section-plus { transform: scale(.94); }
+  .section-name { font-size: var(--fs-xl); font-weight: var(--w-semibold); letter-spacing: -0.02em; }
+
+  .carousel { display: flex; gap: 16px; }
+  .carousel .card { flex: 0 0 auto; }
+  @media (min-width: 641px) {
+    .carousel { flex-wrap: wrap; }
+    .carousel .card { width: 210px; }
+  }
+  @media (max-width: 640px) {
+    .carousel {
+      overflow-x: auto; scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch; padding-bottom: 8px; scrollbar-width: none;
+    }
+    .carousel::-webkit-scrollbar { display: none; }
+    .carousel .card {
+      width: 76%; scroll-snap-align: start;
+      aspect-ratio: 1.1 / 1; min-height: 0; overflow: hidden; /* a bit more square + peek */
+    }
+  }
+
   /* ---------- note editor ---------- */
   .editor-head {
     display: flex; align-items: center; gap: 14px; margin-bottom: 22px;
@@ -801,37 +836,28 @@
   // ---------- home ----------
   function renderHome() {
     const el = document.createElement("div");
-    el.innerHTML = `
-      <div class="screen-head">
-        <h1>Dotline</h1>
-        <p>Each note is one line of connected points.</p>
-      </div>
-      <div class="grid" id="grid"></div>
-      <div class="screen-head" style="margin-top: 34px;">
-        <h1>Timing Dotlines</h1>
-        <p>Events counted from the first: time on the left, name on the right.</p>
-      </div>
-      <div class="grid" id="reverseGrid"></div>`;
-    const freeGrid = el.querySelector("#grid");
-    const reverseGrid = el.querySelector("#reverseGrid");
-
-    const freeAdd = document.createElement("button");
-    freeAdd.className = "card add";
-    freeAdd.innerHTML = `<span class="plus">+</span><span class="add-label">New dot-line</span>`;
-    freeAdd.onclick = newNote;
-    freeGrid.appendChild(freeAdd);
-
-    const reverseAdd = document.createElement("button");
-    reverseAdd.className = "card add";
-    reverseAdd.innerHTML = `<span class="plus">+</span><span class="add-label">New timeline</span>`;
-    reverseAdd.onclick = newReverseNote;
-    reverseGrid.appendChild(reverseAdd);
-
-    db.notes.forEach(n => {
-      if (n.type === "reverse") reverseGrid.appendChild(cardFor(n));
-      else freeGrid.appendChild(cardFor(n));
-    });
+    el.className = "home";
+    el.appendChild(sectionEl("Dotline", false, newNote));
+    el.appendChild(sectionEl("Timed dotline", true, newReverseNote));
     swap(el);
+  }
+
+  // one home section: a "⊕ Name" header (tap = new note) + a horizontal carousel
+  function sectionEl(name, reverse, onCreate) {
+    const sec = document.createElement("div");
+    sec.className = "section";
+    const head = document.createElement("button");
+    head.className = "section-head";
+    head.innerHTML = `<span class="section-plus">+</span><span class="section-name"></span>`;
+    head.querySelector(".section-name").textContent = name;
+    head.onclick = onCreate;
+    sec.appendChild(head);
+
+    const car = document.createElement("div");
+    car.className = "carousel";
+    db.notes.forEach(n => { if ((n.type === "reverse") === reverse) car.appendChild(cardFor(n)); });
+    sec.appendChild(car);
+    return sec;
   }
 
   function cardFor(n) {
@@ -1765,7 +1791,7 @@
     const onPointerDown = (e) => {
       if (e.button !== 0) return;
       e.preventDefault();
-      THRESH = e.pointerType === "touch" ? 48 : 84;
+      THRESH = e.pointerType === "touch" ? 30 : 80;
       dot.setPointerCapture(e.pointerId);
       row.classList.add("dragging");
       const nodes = Array.from(spine.querySelectorAll(".node:not(.ghost)"));
