@@ -284,11 +284,6 @@
   .spine > .node:first-of-type::before { top: 50%; }
   .node.ghost::before { display: none; }
 
-  /* reverse timeline: break the rail below each dot so the arrowhead reads as a
-     real arrow — rail only ABOVE the dot; below is gap → triangle → link shaft */
-  .spine.reverse .node::before { bottom: 50%; top: 0; }
-  .spine.reverse > .node:first-of-type::before { display: none; }
-
   /* SVG overlay used only while dragging a dot to draw the stressed string */
   .spine-wire {
     position: absolute;
@@ -342,21 +337,6 @@
   .dot:active { transform: scale(.9); }
   .dot:focus-visible { outline: 2px solid var(--line); outline-offset: 3px; }
   .node.done .dot { background: var(--ink); border-color: var(--ink); }
-
-  /* reverse timeline: an upward arrow below EVERY dot — time flows up, the list
-     goes back in time as you move down */
-  .spine.reverse > .node .dot::after {
-    content: "";
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0; height: 0;
-    border-left: 5px solid transparent;
-    border-right: 5px solid transparent;
-    border-bottom: 7px solid var(--line);
-    pointer-events: none;
-  }
 
   /* analog clock hands inside reverse dots (div-based, reliable rotation) */
   .clock-hand, .clock-cap {
@@ -443,10 +423,13 @@
     width: 11px; height: 11px; border-radius: 50%;
     background: var(--line); border: none; padding: 0; cursor: pointer;
     box-shadow: 0 0 0 4px var(--surface); /* halo punches the rail so it stands out */
-    transition: transform .12s;
+    transition: transform .12s, opacity .15s;
   }
   .link-add:hover { transform: scale(1.3); }
   .link-add:focus-visible { outline: 2px solid var(--line); outline-offset: 4px; }
+  /* while dragging a dot to delete, hide the bare connector dot so it doesn't
+     hang beside the stretched string (a text label, if any, stays put) */
+  .link.wire-hidden .link-add { opacity: 0; }
   .link-label {
     position: relative; z-index: 2;
     outline: none;
