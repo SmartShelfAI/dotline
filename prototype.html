@@ -464,9 +464,18 @@
     text-align: center; line-height: 1.35;
     overflow-wrap: anywhere;
     transition: border-color .12s, color .12s;
+    display: inline-flex; align-items: center; justify-content: center; gap: 5px;
   }
   .link-label:hover, .link-label:focus { border-color: var(--accent); color: var(--ink); }
   .link-label.interval { cursor: pointer; }
+  .link-arrow {
+    width: 0; height: 0;
+    border-left: 3px solid transparent;
+    border-right: 3px solid transparent;
+    flex-shrink: 0;
+  }
+  .link-arrow.up { border-bottom: 4px solid currentColor; }
+  .link-arrow.down { border-top: 4px solid currentColor; }
   .link-label:empty::before { content: attr(data-ph); color: var(--faint); }
 
   /* ghost add-node at the very bottom: dashed line + dashed grey circle */
