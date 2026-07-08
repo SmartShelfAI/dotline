@@ -526,6 +526,11 @@
     padding: 8px 6px; outline: none;
   }
   .tp-hero input:focus { background: var(--surface-2); border-color: var(--hairline); }
+  /* strip native chrome so the time reads like the clean centred interval value */
+  .tp-hero-time::-webkit-calendar-picker-indicator { display: none; }
+  .tp-hero-time::-webkit-inner-spin-button,
+  .tp-hero-time::-webkit-clear-button { -webkit-appearance: none; display: none; }
+  .tp-hero-time::-webkit-datetime-edit { text-align: center; padding: 0; }
   .tp-sub { margin-top: 4px; font-size: var(--fs-sm); color: var(--muted); font-family: var(--sans); font-weight: var(--w-regular); }
   .tp-date-button {
     position: relative;
