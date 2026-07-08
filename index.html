@@ -36,11 +36,13 @@
     --fs-base: 15px;  /* controls, inputs */
     --fs-md: 16px;    /* primary content (item text) */
     --fs-lg: 20px;    /* modal titles, mobile note title */
-    --fs-xl: 26px;    /* screen H1, note title, modal hero value */
-    /* weights — regular / medium (accent) / semibold (headings) */
+    --fs-xl: 26px;    /* screen H1, note title */
+    --fs-display: 34px; /* modal hero value (the big number you set) */
+    /* weights — regular / medium (accent) / semibold (headings) / bold (hero) */
     --w-regular: 400;
     --w-medium: 500;
     --w-semibold: 600;
+    --w-bold: 700;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -513,6 +515,7 @@
     animation: tp-fade .15s ease;
   }
   .tp-modal {
+    position: relative;
     /* frosted-glass panel: slightly translucent over the blurred backdrop */
     background: color-mix(in srgb, var(--surface) 82%, transparent);
     backdrop-filter: blur(30px) saturate(1.5);
@@ -531,16 +534,17 @@
   .tp-label { font-size: var(--fs-2xs); color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
   .tp-slider { width: 100%; accent-color: var(--line); }
   /* shared big "hero" value = the thing being set; small sub = its consequence */
-  .tp-hero { text-align: center; margin: 4px 0 20px; }
+  .tp-hero { text-align: center; margin: 8px 0 18px; }
   .tp-hero input {
     width: 100%; text-align: center;
-    font-size: var(--fs-xl); font-weight: var(--w-semibold); font-family: var(--mono);
-    font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
-    border: 1px solid transparent; border-radius: 12px;
-    background: transparent; color: var(--ink);
-    padding: 8px 6px; outline: none;
+    font-size: var(--fs-display); font-weight: var(--w-bold); font-family: var(--mono);
+    font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+    border: 1px solid var(--hairline); border-radius: 14px;
+    background: var(--surface-2); color: var(--ink);
+    padding: 12px 8px; outline: none;
+    transition: border-color .12s;
   }
-  .tp-hero input:focus { background: var(--surface-2); border-color: var(--hairline); }
+  .tp-hero input:focus { border-color: var(--line); }
   .tp-sub { margin-top: 4px; font-size: var(--fs-sm); color: var(--muted); font-family: var(--sans); font-weight: var(--w-regular); }
   .tp-date-button {
     position: relative;
@@ -553,10 +557,29 @@
     position: absolute; inset: 0; width: 100%; height: 100%;
     opacity: 0; cursor: pointer; border: none; padding: 0; margin: 0;
   }
-  .tp-actions { display: flex; gap: 10px; }
-  .tp-actions .tp-btn { flex: 1; height: 42px; border-radius: 10px; border: 1px solid var(--hairline);
-    background: var(--surface-2); color: var(--ink); font-size: var(--fs-base); cursor: pointer; }
-  .tp-actions .tp-btn.primary { background: var(--line); color: #fff; border-color: var(--line); }
+  /* close: subtle × top-right (clicking outside also closes) */
+  .tp-close {
+    position: absolute; top: 12px; right: 12px;
+    width: 32px; height: 32px; border-radius: 50%;
+    border: none; background: transparent; color: var(--faint);
+    font-size: var(--fs-lg); line-height: 1; cursor: pointer;
+    display: grid; place-items: center;
+    transition: color .12s, background .12s;
+  }
+  .tp-close:hover { color: var(--ink); background: var(--surface-2); }
+  /* apply: one cute round button with just a check */
+  .tp-actions { display: flex; justify-content: center; margin-top: 6px; }
+  .tp-apply {
+    width: 54px; height: 54px; border-radius: 50%;
+    border: none; background: var(--line); color: #fff;
+    font-size: var(--fs-xl); line-height: 1; cursor: pointer;
+    display: grid; place-items: center;
+    box-shadow: 0 6px 18px color-mix(in srgb, var(--line) 45%, transparent);
+    transition: transform .12s, background .15s;
+  }
+  .tp-apply:hover { background: var(--line-strong); transform: scale(1.06); }
+  .tp-apply:active { transform: scale(.94); }
+  .tp-apply:focus-visible { outline: 2px solid var(--line); outline-offset: 3px; }
 </style>
 
 <div class="app">
@@ -1305,25 +1328,23 @@
     const modal = document.createElement("div");
     modal.className = "tp-modal";
     modal.innerHTML = `
+      <button class="tp-close" type="button" aria-label="Close">✕</button>
       <div class="tp-hero">
         <input class="tp-hero-time" type="text" inputmode="numeric" value="${formatTimeInput(selectedMin)}" aria-label="Time HH:MM" />
         ${isAnchor ? "" : `<div class="tp-sub"></div>`}
       </div>
       ${isAnchor ? "" : `
       <div class="tp-field">
-        <div class="tp-label">Shift ±6 h</div>
         <input class="tp-slider" type="range" min="-6" max="6" step="0.25" value="0" />
       </div>`}
       <div class="tp-field tp-date">
-        <div class="tp-label">Date</div>
         <label class="tp-date-button">
           <span class="tp-date-display">${formatDateLabel(selectedDay)}</span>
           <input class="tp-date-input" type="date" value="${formatDateInput(selectedDay)}" />
         </label>
       </div>
       <div class="tp-actions">
-        <button class="tp-btn cancel" type="button">Cancel</button>
-        <button class="tp-btn primary apply" type="button">Apply</button>
+        <button class="tp-apply" type="button" aria-label="Apply">✓</button>
       </div>`;
 
     const timeInput = modal.querySelector(".tp-hero-time");
@@ -1394,8 +1415,8 @@
       updateSub();
     };
 
-    modal.querySelector(".cancel").onclick = () => overlay.remove();
-    modal.querySelector(".apply").onclick = () => {
+    modal.querySelector(".tp-close").onclick = () => overlay.remove();
+    modal.querySelector(".tp-apply").onclick = () => {
       readTimeInput();
       const base = result();
       opts.onApply(base, base - previousTime);
@@ -1420,17 +1441,16 @@
     const modal = document.createElement("div");
     modal.className = "tp-modal";
     modal.innerHTML = `
+      <button class="tp-close" type="button" aria-label="Close">✕</button>
       <div class="tp-hero">
         <input class="tp-hero-value" type="text" value="${formatDuration(durationMs)}" />
         <div class="tp-sub"></div>
       </div>
       <div class="tp-field">
-        <div class="tp-label">Adjust</div>
         <input class="tp-slider" type="range" min="-6" max="6" step="0.25" value="${Math.max(-6, Math.min(6, durationMs / (60 * MS_MIN)))}" />
       </div>
       <div class="tp-actions">
-        <button class="tp-btn cancel" type="button">Cancel</button>
-        <button class="tp-btn primary apply" type="button">Apply</button>
+        <button class="tp-apply" type="button" aria-label="Apply">✓</button>
       </div>`;
 
     const heroInput = modal.querySelector(".tp-hero-value");
@@ -1456,8 +1476,8 @@
     };
     heroInput.onblur = () => { typing = false; heroInput.value = formatDuration(durationMs); };
 
-    modal.querySelector(".cancel").onclick = () => overlay.remove();
-    modal.querySelector(".apply").onclick = () => {
+    modal.querySelector(".tp-close").onclick = () => overlay.remove();
+    modal.querySelector(".tp-apply").onclick = () => {
       opts.onApply(durationMs);
       overlay.remove();
     };

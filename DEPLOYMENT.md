@@ -48,10 +48,11 @@ use a token so the system stays consistent.
 | `--fs-base`| 15px | controls, inputs |
 | `--fs-md`  | 16px | primary content (item text) |
 | `--fs-lg`  | 20px | modal titles, mobile note title |
-| `--fs-xl`  | 26px | screen H1, note title, modal hero value |
+| `--fs-xl`  | 26px | screen H1, note title |
+| `--fs-display` | 34px | modal hero value (the big number you set) |
 
 **Weights:** `--w-regular` 400 (text) · `--w-medium` 500 (buttons/accent) ·
-`--w-semibold` 600 (headings).
+`--w-semibold` 600 (headings) · `--w-bold` 700 (modal hero).
 
 **Type roles:** `--sans` (system UI) for prose and interface; `--mono` for
 data — times, point numbers/aliases, meta, and modal hero values.
