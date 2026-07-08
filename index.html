@@ -788,6 +788,7 @@
 <div class="app">
   <div class="topbar">
     <div class="top-actions">
+      <div id="topShare"></div>
       <div id="authSlot"></div>
       <button class="icon-btn" id="themeBtn" title="Theme" aria-label="Toggle theme">◐</button>
     </div>
@@ -913,10 +914,35 @@
   let sharedNote = null;
 
   function render() {
-    if (route.name === "shared") { viewOnly = true; renderNote(sharedNote); return; }
-    viewOnly = false;
-    if (route.name === "note") renderNote(db.notes.find(n => n.id === route.noteId));
-    else renderHome();
+    if (route.name === "shared") { viewOnly = true; renderNote(sharedNote); }
+    else {
+      viewOnly = false;
+      if (route.name === "note") renderNote(db.notes.find(n => n.id === route.noteId));
+      else renderHome();
+    }
+    updateTopShare();
+  }
+
+  // Share / Make-a-copy lives in the top bar (always visible, never crowded)
+  function updateTopShare() {
+    const slot = document.getElementById("topShare");
+    if (!slot) return;
+    slot.innerHTML = "";
+    if (route.name === "shared" && sharedNote) {
+      const b = document.createElement("button");
+      b.className = "auth-btn"; b.textContent = "Make a copy";
+      b.onclick = () => makeCopyOfShared(sharedNote);
+      slot.appendChild(b);
+    } else if (route.name === "note") {
+      const n = db.notes.find(x => x.id === route.noteId);
+      if (n) {
+        const b = document.createElement("button");
+        b.className = "auth-btn"; b.textContent = "Share";
+        b.title = "Share note"; b.setAttribute("aria-label", "Share note");
+        b.onclick = () => onShare(n);
+        slot.appendChild(b);
+      }
+    }
   }
 
   // ---------- home ----------
@@ -1151,33 +1177,20 @@
     if (!viewOnly && n.autoTitle) setTimeout(() => title.focus(), 0);
   }
 
-  // add the Share button (top-right); in read-only shared view swap it for a
-  // "Make a copy" action, lock the title, and show a banner
+  // read-only chrome for a shared note (Share/Make-a-copy live in the top bar)
   function applyEditorChrome(el, n) {
-    const head = el.querySelector(".editor-head");
+    if (!viewOnly) return;
     const back = el.querySelector(".back-btn");
     const title = el.querySelector(".note-title");
-    const share = document.createElement("button");
-    share.className = "share-btn";
-    head.appendChild(share);
-    if (viewOnly) {
-      const toggle = el.querySelector(".arrow-toggle");
-      if (toggle) toggle.remove();
-      if (title) title.readOnly = true;
-      back.textContent = "‹ Close";
-      back.onclick = exitShare;
-      share.textContent = "Make a copy";
-      share.classList.add("primary");
-      share.onclick = () => makeCopyOfShared(n);
-      const banner = document.createElement("div");
-      banner.className = "share-banner";
-      banner.textContent = "Shared note · read-only";
-      el.insertBefore(banner, el.querySelector(".board"));
-    } else {
-      share.textContent = "Share";
-      share.title = "Share"; share.setAttribute("aria-label", "Share note");
-      share.onclick = () => onShare(n);
-    }
+    const toggle = el.querySelector(".arrow-toggle");
+    if (toggle) toggle.remove();
+    if (title) title.readOnly = true;
+    back.textContent = "‹ Close";
+    back.onclick = exitShare;
+    const banner = document.createElement("div");
+    banner.className = "share-banner";
+    banner.textContent = "Shared note · read-only";
+    el.insertBefore(banner, el.querySelector(".board"));
   }
 
   async function onShare(n) {
