@@ -440,7 +440,7 @@
     line-height: 1.35;
     padding: 3px 7px; border-radius: 8px;
     cursor: text;
-    overflow-wrap: anywhere;
+    overflow-wrap: anywhere; white-space: pre-wrap; /* keep manual line breaks */
     transition: background .12s, color .12s;
     user-select: text; -webkit-user-select: text;
   }
@@ -478,12 +478,13 @@
   .link.arr-down .arrow, .link.arr-up .arrow {
     display: block; position: absolute;
     left: calc(50% - var(--shift)); transform: translateX(-50%);
-    width: 14px; height: 17px;
+    width: 14px; height: 10px;
     background: var(--surface);   /* board colour — erases the rail here */
     z-index: 1; pointer-events: none;
   }
-  .link.arr-down .arrow { bottom: -9px; }   /* near the lower dot */
-  .link.arr-up .arrow   { top: -9px; }       /* near the upper dot */
+  /* -4px keeps the mask 1px clear of the dot (dot sits 5px past the link edge) */
+  .link.arr-down .arrow { bottom: -4px; }   /* near the lower dot */
+  .link.arr-up .arrow   { top: -4px; }       /* near the upper dot */
   .link .arrow::after {
     content: ""; position: absolute; left: 50%; transform: translateX(-50%);
     width: 0; height: 0;
@@ -1013,7 +1014,8 @@
     label.oninput = () => { node.name = label.textContent.trim(); save(); };
     label.onblur = () => { node.name = label.textContent.trim(); setNameDisplay(label, node); save(); };
     label.onkeydown = (e) => {
-      if (e.key === "Enter") { e.preventDefault(); addNodeAt(n, i); save(); drawSpine(spine, n, i + 1); }
+      // Enter inserts a line break inside the name (multi-line), not a new point
+      if (e.key === "Enter") { e.preventDefault(); insertNewlineAtCaret(); node.name = label.textContent.trim(); save(); }
     };
 
     // keyboard: Enter/Space toggles done, Delete/Backspace removes the node
@@ -1203,7 +1205,7 @@
     label.oninput = () => { node.name = label.textContent.trim(); save(); };
     label.onblur = () => { node.name = label.textContent.trim(); setNameDisplay(label, node); save(); };
     label.onkeydown = (e) => {
-      if (e.key === "Enter") { e.preventDefault(); addReverseNodeAt(n, i); save(); drawReverseSpine(spine, n, i + 1); }
+      if (e.key === "Enter") { e.preventDefault(); insertNewlineAtCaret(); node.name = label.textContent.trim(); save(); }
     };
 
     const revOpts = {
@@ -1716,6 +1718,17 @@
     node.focus();
     const r = document.createRange(); r.selectNodeContents(node); r.collapse(false);
     const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+  }
+  // insert a real newline at the caret (Enter → line break inside a point name)
+  function insertNewlineAtCaret() {
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+    const tn = document.createTextNode("\n");
+    range.insertNode(tn);
+    range.setStartAfter(tn); range.collapse(true);
+    sel.removeAllRanges(); sel.addRange(range);
   }
 
   // ---------- theme toggle ----------
