@@ -420,6 +420,7 @@
   .node.dragging .node-alias,
   .node.dragging .hl-star { opacity: 0; }
   .node.wire-hidden::before, .link.wire-hidden::before { opacity: 0; }
+  .node.ghost.wire-hidden { opacity: 0; transition: opacity .15s; }
   .node.removing { opacity: 0; transform: translateX(var(--snap-dx, 120px)) scale(.9); }
   .node.snap-back { transition: transform .22s cubic-bezier(.2,.8,.2,1); transform: none; }
   /* while dragging a dot: two hints flank it — left = add below, right = delete.
@@ -954,16 +955,17 @@
     const title = cardEl.querySelector(".title"); if (title) title.style.color = col ? col.text : "";
     const meta = cardEl.querySelector(".meta");
     if (meta) { meta.style.color = col ? col.text : ""; meta.style.opacity = col ? ".72" : ""; }
-    const mini = cardEl.querySelector(".mini"); if (mini) mini.innerHTML = miniSvg(n, tone);
+    const mini = cardEl.querySelector(".mini"); if (mini) mini.innerHTML = miniSvg(n, col);
     cardEl.classList.toggle("colored", !!col);
   }
 
-  function miniSvg(n, tone) {
+  function miniSvg(n, col) {
+    const tone = col ? col.text : null;
     const stroke = tone || "var(--line)";
     const doneCol = tone || "var(--ink)";
-    const emptyFill = tone || "var(--surface)";  // tone-coloured card: hollow uses card text tone? no — bg
     const textCol = tone || "var(--faint)";
-    const holeFill = tone ? "none" : "var(--surface)";
+    // empty dot is filled with the card background so the line never shows THROUGH it
+    const holeFill = col ? col.bg : "var(--surface)";
     const shown = Math.min(n.nodes.length, 4);
     const gap = 26, top = 6, x = 11, r = 6;
     const h = top + (shown - 1) * gap + 8;
@@ -1866,12 +1868,8 @@
       const a = getDotCenter(nodes[i], wire);
       const b = getDotCenter(nodes[i + 1], wire);
       wire.appendChild(pathSeg(a, b));
-    } else if (i === nodes.length - 1 && ghostNode) {
-      // dragging the last real dot: pull the dashed segment to the ghost add-node
-      const a = getDotCenter(nodes[i], wire);
-      const b = getDotCenter(ghostNode, wire);
-      wire.appendChild(pathSeg(a, b));
     }
+    // (last dot: nothing to pull to below — the ghost tail is hidden during drag)
   }
 
   function bindDotDrag(dot, row, n, node, i, spine, opts = {}) {
@@ -1905,9 +1903,11 @@
       if (i > 0) { neighbors.push(nodes[i - 1]); neighbors.push(links[i - 1]); }
       if (i < nodes.length - 1) { neighbors.push(links[i]); neighbors.push(nodes[i + 1]); }
       else {
-        // dragging the last dot: hide the dashed link to the ghost add-node
+        // dragging the last dot: hide the whole ghost tail (dashed line + "+")
         const ghostLink = spine.querySelector(".link.ghost");
+        const ghostNode = spine.querySelector(".node.ghost");
         if (ghostLink) neighbors.push(ghostLink);
+        if (ghostNode) neighbors.push(ghostNode);
       }
       neighbors.forEach(el => el.classList.add("wire-hidden"));
       addHints();
