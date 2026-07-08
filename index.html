@@ -21,14 +21,17 @@
     --muted: #5B6672;
     --faint: #9AA4B0;
     --hairline: #DCE1E8;
-    --line: #128074;
+    --line: #128074;          /* green — reserved for the timeline (dots/lines/arrows) */
     --line-strong: #0C6B61;
     --line-soft: rgba(18, 128, 116, 0.14);
+    --accent: #6D45D9;        /* purple — all UI accents (buttons, focus, controls) */
+    --accent-strong: #5A32C0;
     --danger: #C24B3A;
     --shadow: 0 1px 2px rgba(20, 28, 38, .06), 0 8px 24px rgba(20, 28, 38, .07);
     --radius: 16px;
     --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
-    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    /* friendly rounded system font (SF Pro Rounded on Apple) for everything */
+    --sans: ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN", "Nunito", "Quicksand", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     /* type scale — the single source of truth for every font-size */
     --fs-2xs: 11px;   /* uppercase labels, meta */
     --fs-xs: 12px;    /* fine hints */
@@ -56,6 +59,8 @@
       --line: #29A99B;
       --line-strong: #34C0B0;
       --line-soft: rgba(41, 169, 155, 0.16);
+      --accent: #7C5CF0;
+      --accent-strong: #9578F3;
       --danger: #E06A55;
       --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
     }
@@ -63,13 +68,15 @@
   :root[data-theme="light"] {
     --bg: #EBEEF2; --surface: #FFFFFF; --surface-2: #F4F6F9; --ink: #1A1F27;
     --muted: #5B6672; --faint: #9AA4B0; --hairline: #DCE1E8; --line: #128074;
-    --line-strong: #0C6B61; --line-soft: rgba(18,128,116,.14); --danger: #C24B3A;
+    --line-strong: #0C6B61; --line-soft: rgba(18,128,116,.14);
+    --accent: #6D45D9; --accent-strong: #5A32C0; --danger: #C24B3A;
     --shadow: 0 1px 2px rgba(20,28,38,.06), 0 8px 24px rgba(20,28,38,.07);
   }
   :root[data-theme="dark"] {
     --bg: #12161B; --surface: #1B212A; --surface-2: #222A34; --ink: #E7ECF2;
     --muted: #94A0AD; --faint: #5F6C7A; --hairline: #2A323D; --line: #29A99B;
-    --line-strong: #34C0B0; --line-soft: rgba(41,169,155,.16); --danger: #E06A55;
+    --line-strong: #34C0B0; --line-soft: rgba(41,169,155,.16);
+    --accent: #7C5CF0; --accent-strong: #9578F3; --danger: #E06A55;
     --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
   }
 
@@ -121,7 +128,7 @@
     font-size: var(--fs-sm); font-weight: var(--w-medium);
     transition: border-color .15s, color .15s;
   }
-  .auth-btn:hover { border-color: var(--line); color: var(--line); }
+  .auth-btn:hover { border-color: var(--accent); color: var(--accent); }
   .user-wrap { position: relative; }
   .avatar-btn {
     appearance: none;
@@ -136,7 +143,7 @@
   .avatar-btn .who { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .avatar-fallback {
     width: 30px; height: 30px; border-radius: 50%; flex: none;
-    background: var(--line); color: #fff; display: grid; place-items: center;
+    background: var(--accent); color: #fff; display: grid; place-items: center;
     font-size: var(--fs-sm); font-weight: var(--w-semibold);
   }
   .pop {
@@ -165,7 +172,7 @@
   .gbtn-holder { min-height: 40px; display: flex; justify-content: center; }
   .sync-dot {
     display: inline-block; width: 7px; height: 7px; border-radius: 50%;
-    background: var(--line); margin-right: 7px; vertical-align: middle;
+    background: var(--accent); margin-right: 7px; vertical-align: middle;
     opacity: 0; transition: opacity .2s;
   }
   .sync-dot.on { opacity: 1; }
@@ -196,8 +203,8 @@
     transition: transform .12s, border-color .15s, box-shadow .2s;
     position: relative;
   }
-  .card:hover { transform: translateY(-2px); border-color: var(--line); }
-  .card:focus-visible { outline: 2px solid var(--line); outline-offset: 2px; }
+  .card:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .card .title {
     font-weight: var(--w-semibold); font-size: var(--fs-md); letter-spacing: -0.01em; color: var(--ink);
     margin-bottom: 3px;
@@ -205,7 +212,7 @@
     overflow: hidden;
   }
   .card .meta {
-    font-family: var(--mono); font-size: var(--fs-2xs); color: var(--faint);
+    font-family: var(--sans); font-size: var(--fs-2xs); color: var(--faint);
     letter-spacing: .03em; text-transform: uppercase;
   }
   .card .mini { margin-top: auto; padding-top: 14px; }
@@ -229,7 +236,7 @@
     background: transparent; box-shadow: none; color: var(--muted);
     gap: 10px;
   }
-  .card.add:hover { border-color: var(--line); color: var(--line); }
+  .card.add:hover { border-color: var(--accent); color: var(--accent); }
   .card.add .plus {
     width: 46px; height: 46px; border-radius: 50%;
     border: 2px solid currentColor;
@@ -400,7 +407,7 @@
     max-width: 100%;
     outline: none;
     font-size: var(--fs-xs); font-weight: var(--w-medium); color: var(--ink);
-    font-family: var(--mono); font-variant-numeric: tabular-nums;
+    font-family: var(--sans); font-variant-numeric: tabular-nums;
     letter-spacing: -0.01em;
     line-height: 1.35;
     padding: 2px 6px; border-radius: 8px;
@@ -411,7 +418,7 @@
   }
   .node-alias:hover, .node-alias:focus { background: var(--surface-2); }
   .node-alias.is-auto { color: var(--faint); }
-  .spine.reverse .node-alias { font-size: var(--fs-md); font-weight: var(--w-semibold); color: var(--ink); cursor: pointer; }
+  .spine.reverse .node-alias { font-size: var(--fs-md); font-weight: var(--w-medium); color: var(--ink); cursor: pointer; }
   .node.done .node-alias { color: var(--faint); text-decoration: line-through; }
   .spine.reverse .node.done .node-alias { font-weight: var(--w-medium); }
   .node-alias:empty::before { content: attr(data-ph); color: var(--faint); font-weight: var(--w-regular); }
@@ -467,7 +474,7 @@
     overflow-wrap: anywhere;
     transition: border-color .12s, color .12s;
   }
-  .link-label:hover, .link-label:focus { border-color: var(--line); color: var(--ink); }
+  .link-label:hover, .link-label:focus { border-color: var(--accent); color: var(--ink); }
   .link-label.interval { cursor: pointer; }
   .link-label:empty::before { content: attr(data-ph); color: var(--faint); }
 
@@ -522,7 +529,7 @@
     -webkit-backdrop-filter: blur(30px) saturate(1.5);
     border: 1px solid color-mix(in srgb, var(--hairline) 60%, transparent);
     border-radius: 18px;
-    padding: 22px;
+    padding: 46px 24px 26px; /* generous top room so the × never crowds the hero */
     width: 100%; max-width: 360px;
     box-shadow: 0 20px 60px rgba(0,0,0,.28);
     animation: tp-pop .18s ease;
@@ -530,21 +537,21 @@
   @keyframes tp-fade { from { opacity: 0; } to { opacity: 1; } }
   @keyframes tp-pop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
   .tp-title { font-size: var(--fs-lg); font-weight: var(--w-semibold); margin-bottom: 18px; }
-  .tp-field { margin-bottom: 16px; }
+  .tp-field { margin-bottom: 20px; }
   .tp-label { font-size: var(--fs-2xs); color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
-  .tp-slider { width: 100%; accent-color: var(--line); }
+  .tp-slider { width: 100%; accent-color: var(--accent); }
   /* shared big "hero" value = the thing being set; small sub = its consequence */
-  .tp-hero { text-align: center; margin: 8px 0 18px; }
+  .tp-hero { text-align: center; margin: 0 0 22px; }
   .tp-hero input {
     width: 100%; text-align: center;
-    font-size: var(--fs-display); font-weight: var(--w-bold); font-family: var(--mono);
+    font-size: var(--fs-display); font-weight: var(--w-bold); font-family: var(--sans);
     font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
     border: 1px solid var(--hairline); border-radius: 14px;
     background: var(--surface-2); color: var(--ink);
-    padding: 12px 8px; outline: none;
+    padding: 16px 10px; outline: none;
     transition: border-color .12s;
   }
-  .tp-hero input:focus { border-color: var(--line); }
+  .tp-hero input:focus { border-color: var(--accent); }
   .tp-sub { margin-top: 4px; font-size: var(--fs-sm); color: var(--muted); font-family: var(--sans); font-weight: var(--w-regular); }
   .tp-date-button {
     position: relative;
@@ -560,7 +567,7 @@
   /* close: subtle × top-right (clicking outside also closes) */
   .tp-close {
     position: absolute; top: 12px; right: 12px;
-    width: 32px; height: 32px; border-radius: 50%;
+    width: 34px; height: 34px; border-radius: 50%;
     border: none; background: transparent; color: var(--faint);
     font-size: var(--fs-lg); line-height: 1; cursor: pointer;
     display: grid; place-items: center;
@@ -571,15 +578,14 @@
   .tp-actions { display: flex; justify-content: center; margin-top: 6px; }
   .tp-apply {
     width: 54px; height: 54px; border-radius: 50%;
-    border: none; background: var(--line); color: #fff;
+    border: none; background: var(--accent); color: #fff;
     font-size: var(--fs-xl); line-height: 1; cursor: pointer;
     display: grid; place-items: center;
-    box-shadow: 0 6px 18px color-mix(in srgb, var(--line) 45%, transparent);
     transition: transform .12s, background .15s;
   }
-  .tp-apply:hover { background: var(--line-strong); transform: scale(1.06); }
+  .tp-apply:hover { background: var(--accent-strong); transform: scale(1.06); }
   .tp-apply:active { transform: scale(.94); }
-  .tp-apply:focus-visible { outline: 2px solid var(--line); outline-offset: 3px; }
+  .tp-apply:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 </style>
 
 <div class="app">
@@ -760,10 +766,10 @@
       const label = n.type === "reverse"
         ? (n.nodes[i].name || formatTime(n.nodes[i].time, startOfDay(n.nodes[0].time)) || String(i + 1))
         : (n.nodes[i].name || n.nodes[i].alias || String(i + 1));
-      s += `<text x="${x + 14}" y="${cy + 4}" font-family="var(--mono)" font-size="11" fill="var(--faint)">${escapeHtml(trunc(label, 16))}</text>`;
+      s += `<text x="${x + 14}" y="${cy + 4}" font-family="var(--sans)" font-size="11" fill="var(--faint)">${escapeHtml(trunc(label, 16))}</text>`;
     }
     if (n.nodes.length > shown) {
-      s += `<text x="${x - 3}" y="${y1 + 16}" font-family="var(--mono)" font-size="11" fill="var(--faint)">+${n.nodes.length - shown}</text>`;
+      s += `<text x="${x - 3}" y="${y1 + 16}" font-family="var(--sans)" font-size="11" fill="var(--faint)">+${n.nodes.length - shown}</text>`;
     }
     s += `</svg>`;
     return s;

@@ -54,13 +54,23 @@ use a token so the system stays consistent.
 **Weights:** `--w-regular` 400 (text) · `--w-medium` 500 (buttons/accent) ·
 `--w-semibold` 600 (headings) · `--w-bold` 700 (modal hero).
 
-**Type roles:** `--sans` (system UI) for prose and interface; `--mono` for
-data — times, point numbers/aliases, meta, and modal hero values.
+**Type role:** one friendly rounded family, `--sans` (`ui-rounded` → SF Pro
+Rounded on Apple, graceful fallback elsewhere), used everywhere. `--mono` is
+retired from visible text; digits stay aligned via `font-variant-numeric:
+tabular-nums`.
 
-**Colour / shape tokens:** `--bg --surface --surface-2 --ink --muted --faint
---hairline --line (accent teal) --danger`, plus `--radius`, `--shadow`. All have
-light/dark variants driven by `prefers-color-scheme` and the `data-theme`
-override. **Layout:** `--shift` (axis offset left of centre), `--dot` (dot size).
+**Two accent colours — keep them separate:**
+- `--line` **(green)** is reserved for the timeline itself — dots, the vertical
+  line, arrowheads, clock hands, the connector dot, the ghost "+" and the card
+  mini-previews. Nothing else.
+- `--accent` **(purple)** is every UI accent — buttons, the round Apply, focus
+  rings, the slider, sync dot, avatar, card hover/focus, the link-note pill
+  border. Hover uses `--accent-strong`.
+
+**Other tokens:** `--bg --surface --surface-2 --ink --muted --faint --hairline
+--danger`, plus `--radius`, `--shadow`. All have light/dark variants driven by
+`prefers-color-scheme` and the `data-theme` override. **Layout:** `--shift`
+(axis offset left of centre), `--dot` (dot size).
 
 The three time modals share one pattern built only from these tokens: a big
 hero value (`--fs-xl`, mono) = the thing you set, a small sub (`--fs-sm`, sans,
