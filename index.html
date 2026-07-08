@@ -30,8 +30,11 @@
     --shadow: 0 1px 2px rgba(20, 28, 38, .06), 0 8px 24px rgba(20, 28, 38, .07);
     --radius: 16px;
     --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
-    /* friendly rounded system font (SF Pro Rounded on Apple) for everything */
-    --sans: ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN", "Nunito", "Quicksand", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    /* friendly rounded system font (SF Pro Rounded on Apple) for everything.
+       IMPORTANT: no CJK fonts (e.g. Hiragino Maru Gothic) in this stack — they
+       have Cyrillic glyphs and would be picked for Russian text, rendering it
+       very wide/spaced. Fall straight to system-ui (SF Pro) for full Cyrillic. */
+    --sans: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     /* type scale — the single source of truth for every font-size */
     --fs-2xs: 11px;   /* uppercase labels, meta */
     --fs-xs: 12px;    /* fine hints */

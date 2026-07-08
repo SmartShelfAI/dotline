@@ -64,6 +64,10 @@ use a token so the system stays consistent.
 Rounded on Apple, graceful fallback elsewhere), used everywhere. `--mono` is
 retired from visible text; digits stay aligned via `font-variant-numeric:
 tabular-nums`.
+**Do NOT put a CJK font (Hiragino Maru Gothic, etc.) in the `--sans` stack** —
+they carry Cyrillic glyphs and get chosen for Russian text, rendering it very
+wide/spaced. The stack falls straight from the rounded Apple fonts to
+`system-ui` so Cyrillic stays in SF Pro with normal spacing.
 
 **Two accent colours — keep them separate:**
 - `--line` **(green)** is reserved for the timeline itself — dots, the vertical
