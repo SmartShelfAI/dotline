@@ -345,8 +345,8 @@
     font-size: var(--fs-sm);
   }
   .share-copy {
-    width: 100%; height: 44px; border-radius: 12px; border: none; cursor: pointer;
-    background: var(--accent); color: #fff; font-size: var(--fs-base); font-weight: var(--w-medium);
+    width: 100%; height: 40px; border-radius: 10px; border: none; cursor: pointer;
+    background: var(--accent); color: #fff; font-size: var(--fs-sm); font-weight: var(--w-medium);
   }
   .share-copy:hover { background: var(--accent-strong); }
   .share-textlink {
@@ -1249,7 +1249,7 @@
       <div class="share-title">Share this note</div>
       <input class="share-url app" readonly value="${escapeAttr(appUrl)}" />
       <button class="share-copy app" type="button">Copy link</button>
-      <button class="share-textlink" type="button">Copy plain-text link (for AI / previews)</button>`;
+      <button class="share-textlink" type="button">Ссылка для твоего ИИ</button>`;
     const close = () => overlay.remove();
     modal.querySelector(".tp-close").onclick = close;
     overlay.onclick = (e) => { if (e.target === overlay) close(); };
@@ -1262,7 +1262,7 @@
       };
     }
     wire(modal.querySelector(".share-copy.app"), appUrl, "Copied ✓");
-    wire(modal.querySelector(".share-textlink"), textUrl, "Text link copied ✓");
+    wire(modal.querySelector(".share-textlink"), textUrl, "Скопировано ✓");
     overlay.appendChild(modal); document.body.appendChild(overlay);
     setTimeout(() => modal.querySelector(".share-url.app").select(), 0);
   }
