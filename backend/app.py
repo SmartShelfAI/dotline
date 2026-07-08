@@ -57,11 +57,12 @@ def init_db():
             created TEXT);
         """
     )
-    # add the readable-text column to any pre-existing shares table
-    try:
-        c.execute("ALTER TABLE shares ADD COLUMN text TEXT")
-    except Exception:
-        pass
+    # add columns to any pre-existing shares table
+    for col in ("text TEXT", "ip TEXT"):
+        try:
+            c.execute("ALTER TABLE shares ADD COLUMN " + col)
+        except Exception:
+            pass
     c.commit()
     c.close()
 
@@ -71,6 +72,17 @@ init_db()
 
 def now():
     return datetime.datetime.utcnow().isoformat()
+
+
+def iso_ago(**kw):
+    return (datetime.datetime.utcnow() - datetime.timedelta(**kw)).isoformat()
+
+
+def client_ip():
+    xff = request.headers.get("X-Forwarded-For", "")
+    return (request.headers.get("X-Real-IP")
+            or (xff.split(",")[0].strip() if xff else None)
+            or request.remote_addr or "?")
 
 
 def current_user():
@@ -220,9 +232,24 @@ def create_share():
         return jsonify({"error": "too big"}), 413
     text = data.get("text")
     text = text if isinstance(text, str) else ""
-    tok = secrets.token_urlsafe(9)
+    ip = client_ip()
     c = db()
-    c.execute("INSERT INTO shares(token, note, text, created) VALUES(?,?,?,?)", (tok, blob, text, now()))
+    # housekeeping: drop snapshots older than 180 days
+    c.execute("DELETE FROM shares WHERE created < ?", (iso_ago(days=180),))
+    # rate limit: at most 30 new shares per IP per hour
+    recent = c.execute(
+        "SELECT COUNT(*) AS n FROM shares WHERE ip = ? AND created > ?",
+        (ip, iso_ago(hours=1)),
+    ).fetchone()["n"]
+    if recent >= 30:
+        c.commit()
+        c.close()
+        return jsonify({"error": "rate limited, try again later"}), 429
+    tok = secrets.token_urlsafe(9)
+    c.execute(
+        "INSERT INTO shares(token, note, text, ip, created) VALUES(?,?,?,?,?)",
+        (tok, blob, text, ip, now()),
+    )
     c.commit()
     c.close()
     return jsonify({"token": tok})

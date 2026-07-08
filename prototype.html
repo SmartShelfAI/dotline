@@ -935,9 +935,11 @@
   let viewOnly = false;
   let sharedNote = null;
   let nowTimer = null;   // ticks the "now" line in real-time mode
+  let nowCtx = null;     // { spine, n } of the current real-time spine (for resize)
 
   function render() {
     if (nowTimer) { clearInterval(nowTimer); nowTimer = null; }
+    nowCtx = null;
     if (route.name === "shared") { viewOnly = true; renderNote(sharedNote); }
     else {
       viewOnly = false;
@@ -1549,6 +1551,7 @@
   // ---------- reverse timeline ----------
   function drawReverseSpine(spine, n, focusIndex) {
     if (nowTimer) { clearInterval(nowTimer); nowTimer = null; }  // avoid timer pile-up on re-draw
+    nowCtx = null;
     spine.innerHTML = "";
     const wire = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     wire.classList.add("spine-wire");
@@ -1561,6 +1564,7 @@
     if (!viewOnly) spine.appendChild(reverseGhostRow(n, spine));
     applyArrowStubs(spine, n);
     if (n.realtime) {
+      nowCtx = { spine, n };
       positionNowLine(spine, n);
       nowTimer = setInterval(() => positionNowLine(spine, n), 30000);
     }
@@ -2263,6 +2267,16 @@
     const isDark = cur ? cur === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
     document.documentElement.setAttribute("data-theme", isDark ? "light" : "dark");
   };
+
+  // keep the real-time "now" line placed correctly when the window resizes
+  let resizeT = null;
+  window.addEventListener("resize", () => {
+    if (!nowCtx) return;
+    clearTimeout(resizeT);
+    resizeT = setTimeout(() => {
+      if (nowCtx && document.contains(nowCtx.spine)) positionNowLine(nowCtx.spine, nowCtx.n);
+    }, 150);
+  });
 
   // ---------- auth UI ----------
   const $slot = document.getElementById("authSlot");
