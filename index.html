@@ -1980,6 +1980,14 @@
       syncSlider();
       updateSub();
     };
+    // reliably open the native calendar on click (a transparent date input alone
+    // doesn't open it in Chrome — needs showPicker())
+    const dateBtn = modal.querySelector(".tp-date-button");
+    dateBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (dateInput.showPicker) { try { dateInput.showPicker(); return; } catch (err) {} }
+      dateInput.focus(); dateInput.click();
+    });
 
     modal.querySelector(".tp-close").onclick = () => overlay.remove();
     modal.querySelector(".tp-apply").onclick = () => {
