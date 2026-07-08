@@ -32,6 +32,41 @@ Delete/Backspace removes the point. The dot is dead-centre on every screen size
 
 ---
 
+## Design system (single source of truth)
+
+Everything visual is driven by CSS custom properties on `:root` in
+`prototype.html`. Do not hard-code colours, sizes, or weights in components —
+use a token so the system stays consistent.
+
+**Type scale** (7 steps, no in-between values):
+
+| Token | Size | Used for |
+|-------|------|----------|
+| `--fs-2xs` | 11px | uppercase labels, meta |
+| `--fs-xs`  | 12px | fine hints |
+| `--fs-sm`  | 13px | captions, buttons, secondary lines |
+| `--fs-base`| 15px | controls, inputs |
+| `--fs-md`  | 16px | primary content (item text) |
+| `--fs-lg`  | 20px | modal titles, mobile note title |
+| `--fs-xl`  | 26px | screen H1, note title, modal hero value |
+
+**Weights:** `--w-regular` 400 (text) · `--w-medium` 500 (buttons/accent) ·
+`--w-semibold` 600 (headings).
+
+**Type roles:** `--sans` (system UI) for prose and interface; `--mono` for
+data — times, point numbers/aliases, meta, and modal hero values.
+
+**Colour / shape tokens:** `--bg --surface --surface-2 --ink --muted --faint
+--hairline --line (accent teal) --danger`, plus `--radius`, `--shadow`. All have
+light/dark variants driven by `prefers-color-scheme` and the `data-theme`
+override. **Layout:** `--shift` (axis offset left of centre), `--dot` (dot size).
+
+The three time modals share one pattern built only from these tokens: a big
+hero value (`--fs-xl`, mono) = the thing you set, a small sub (`--fs-sm`, sans,
+muted) = its consequence, `--fs-2xs` labels, `--fs-base` controls.
+
+---
+
 ## 1. Project structure (local)
 
 `/Users/inxnik/nikita/135_fungeneering_com/notes/`
