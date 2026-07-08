@@ -339,22 +339,22 @@
   }
   .share-modal { max-width: 440px; }
   .share-title { font-size: var(--fs-lg); font-weight: var(--w-semibold); margin-bottom: 14px; }
-  .share-lbl {
-    font-size: var(--fs-2xs); color: var(--muted); text-transform: uppercase;
-    letter-spacing: .05em; margin: 12px 0 6px;
-  }
   .share-url {
-    width: 100%; height: 40px; padding: 0 12px; border-radius: 10px; margin-bottom: 8px;
+    width: 100%; height: 42px; padding: 0 12px; border-radius: 10px; margin-bottom: 10px;
     border: 1px solid var(--hairline); background: var(--surface-2); color: var(--ink);
     font-size: var(--fs-sm);
   }
   .share-copy {
-    width: 100%; height: 42px; border-radius: 12px; border: none; cursor: pointer;
+    width: 100%; height: 44px; border-radius: 12px; border: none; cursor: pointer;
     background: var(--accent); color: #fff; font-size: var(--fs-base); font-weight: var(--w-medium);
   }
   .share-copy:hover { background: var(--accent-strong); }
-  .share-copy.ghost { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
-  .share-copy.ghost:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent); }
+  .share-textlink {
+    display: block; width: 100%; margin-top: 12px; padding: 6px 0;
+    background: none; border: none; cursor: pointer; color: var(--muted);
+    font-size: var(--fs-sm); text-decoration: underline; text-underline-offset: 3px;
+  }
+  .share-textlink:hover { color: var(--accent); }
   .note-title {
     font-size: var(--fs-xl); font-weight: var(--w-semibold); letter-spacing: -0.02em;
     border: none; background: transparent; color: var(--ink);
@@ -1247,25 +1247,22 @@
     modal.innerHTML = `
       <button class="tp-close" type="button" aria-label="Close">✕</button>
       <div class="share-title">Share this note</div>
-      <div class="share-lbl">Link (opens the note)</div>
       <input class="share-url app" readonly value="${escapeAttr(appUrl)}" />
       <button class="share-copy app" type="button">Copy link</button>
-      <div class="share-lbl">Plain-text link — readable by AI &amp; previews</div>
-      <input class="share-url text" readonly value="${escapeAttr(textUrl)}" />
-      <button class="share-copy text ghost" type="button">Copy text link</button>`;
+      <button class="share-textlink" type="button">Copy plain-text link (for AI / previews)</button>`;
     const close = () => overlay.remove();
     modal.querySelector(".tp-close").onclick = close;
     overlay.onclick = (e) => { if (e.target === overlay) close(); };
-    function wire(btn, input, url) {
+    function wire(btn, url, defText) {
       btn.onclick = async () => {
         try { await navigator.clipboard.writeText(url); }
-        catch (e) { input.select(); document.execCommand("copy"); }
-        const t = btn.textContent; btn.textContent = "Copied ✓";
+        catch (e) {}
+        const t = btn.textContent; btn.textContent = defText || "Copied ✓";
         setTimeout(() => { btn.textContent = t; }, 1200);
       };
     }
-    wire(modal.querySelector(".share-copy.app"), modal.querySelector(".share-url.app"), appUrl);
-    wire(modal.querySelector(".share-copy.text"), modal.querySelector(".share-url.text"), textUrl);
+    wire(modal.querySelector(".share-copy.app"), appUrl, "Copied ✓");
+    wire(modal.querySelector(".share-textlink"), textUrl, "Text link copied ✓");
     overlay.appendChild(modal); document.body.appendChild(overlay);
     setTimeout(() => modal.querySelector(".share-url.app").select(), 0);
   }
