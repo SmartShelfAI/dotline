@@ -1339,14 +1339,13 @@
     hint.className = "ghost-hint"; hint.textContent = "add event";
     const doAdd = () => {
       const last = n.nodes[n.nodes.length - 1];
-      // adding to a timeline = choosing an interval; default a clean -30 min
-      openDurationPicker({
+      // full time picker (date + time + slider); default is previous − 30 min
+      openTimePicker({
         anchorTime: n.nodes[0].time,
         previousTime: last.time,
-        currentDuration: -30 * MS_MIN,
-        onApply: (durationMs) => {
-          n.nodes.push({ id: uid(), name: "", time: last.time + durationMs });
-          n.links.push({ duration: durationMs });
+        onApply: (baseTime, duration) => {
+          n.nodes.push({ id: uid(), name: "", time: baseTime });
+          n.links.push({ duration: duration });
           save();
           drawReverseSpine(spine, n, n.nodes.length - 1);
         }
