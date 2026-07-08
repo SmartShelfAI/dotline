@@ -1593,34 +1593,27 @@
   }
 
   // ---- living "now" wave -------------------------------------------------
-  // A dashed line that behaves like water: several sine components of different
-  // wavelength / speed / direction are summed, each with its amplitude slowly
-  // modulated, so crests drift sideways and randomly swell — never periodic to
-  // the eye. On desktop the pointer stirs it: moving the mouse over the line
-  // injects a springy, localised ripple that leans the way the cursor moved.
+  // A dashed line that behaves like calm water: a few sine components of very
+  // different (wide) wavelength, speed and direction are summed, each with its
+  // amplitude slowly modulated, so the crests drift gently and swell/ebb without
+  // ever looking periodic. Wide, unhurried — a lake, not a choppy sea.
   const NOW_W = 120, NOW_CY = 12;               // viewBox space (0..120 × 0..24)
   const NOW_WAVES = [
-    { A: 3.4, k: 2 * Math.PI / 78, w:  0.55, p: 0.0, mA: 0.35, mW: 0.31, mP: 0.0 },
-    { A: 2.3, k: 2 * Math.PI / 46, w: -0.85, p: 1.7, mA: 0.40, mW: 0.47, mP: 1.1 },
-    { A: 1.4, k: 2 * Math.PI / 29, w:  1.25, p: 3.1, mA: 0.45, mW: 0.67, mP: 2.3 },
+    { A: 3.6, k: 2 * Math.PI / 150, w:  0.28, p: 0.0, mA: 0.22, mW: 0.16, mP: 0.0 },
+    { A: 2.4, k: 2 * Math.PI /  96, w: -0.40, p: 1.7, mA: 0.28, mW: 0.24, mP: 1.1 },
+    { A: 1.2, k: 2 * Math.PI /  63, w:  0.52, p: 3.1, mA: 0.30, mW: 0.33, mP: 2.3 },
   ];
-  const nowPtr = { x: null, amp: 0, vel: 0, lastY: null };  // pointer ripple (spring)
-  let nowWaveRAF = null, nowWaveLast = 0;
+  let nowWaveRAF = null;
   const nowReduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const nowCanHover = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
   function nowWavePath(t) {
-    const N = 30, sig2 = 2 * 14 * 14, pts = [];
+    const N = 30, pts = [];
     for (let i = 0; i <= N; i++) {
       const x = NOW_W * i / N;
       let y = NOW_CY;
       for (const c of NOW_WAVES) {
         const a = c.A * (1 + c.mA * Math.sin(c.mW * t + c.mP));
         y += a * Math.sin(c.k * x + c.w * t + c.p);
-      }
-      if (nowPtr.x != null && Math.abs(nowPtr.amp) > 0.02) {
-        const dx = x - nowPtr.x;
-        y += nowPtr.amp * Math.exp(-(dx * dx) / sig2);
       }
       pts.push([x, y]);
     }
@@ -1637,36 +1630,13 @@
   function nowWaveFrame(ts) {
     const path = document.querySelector(".now-wave path");
     if (!path) { nowWaveRAF = null; return; }        // line gone → stop the loop
-    const dt = Math.min(0.05, (ts - nowWaveLast) / 1000) || 0.016;
-    nowWaveLast = ts;
-    // damped spring pulling the pointer ripple back to rest (a couple of wobbles)
-    nowPtr.vel += (-60 * nowPtr.amp - 6 * nowPtr.vel) * dt;
-    nowPtr.amp += nowPtr.vel * dt;
-    if (nowPtr.amp > 9) { nowPtr.amp = 9; nowPtr.vel = Math.min(nowPtr.vel, 0); }
-    else if (nowPtr.amp < -9) { nowPtr.amp = -9; nowPtr.vel = Math.max(nowPtr.vel, 0); }
     path.setAttribute("d", nowWavePath(ts / 1000));
     nowWaveRAF = requestAnimationFrame(nowWaveFrame);
   }
 
-  function startNowWave(spine) {
+  function startNowWave() {
     if (nowReduceMotion) return;                     // keep the static fallback wave
-    if (nowCanHover && !spine.dataset.nowPtr) {
-      spine.dataset.nowPtr = "1";
-      spine.addEventListener("pointermove", (e) => {
-        if (e.pointerType && e.pointerType !== "mouse") return;
-        const svg = spine.querySelector(".now-wave");
-        if (!svg) return;
-        const r = svg.getBoundingClientRect();
-        nowPtr.x = Math.max(0, Math.min(NOW_W, (e.clientX - r.left) / r.width * NOW_W));
-        if (nowPtr.lastY != null) {
-          const dy = Math.max(-40, Math.min(40, e.clientY - nowPtr.lastY));
-          nowPtr.vel += dy * 2.8;                    // lean toward where the cursor moved
-        }
-        nowPtr.lastY = e.clientY;
-      });
-      spine.addEventListener("pointerleave", () => { nowPtr.lastY = null; });
-    }
-    if (!nowWaveRAF) { nowWaveLast = performance.now(); nowWaveRAF = requestAnimationFrame(nowWaveFrame); }
+    if (!nowWaveRAF) nowWaveRAF = requestAnimationFrame(nowWaveFrame);
   }
 
   // place the dashed "now" line at the vertical position of the current time,
