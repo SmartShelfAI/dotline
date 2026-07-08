@@ -675,7 +675,7 @@
       </div>
       <div class="grid" id="grid"></div>
       <div class="screen-head" style="margin-top: 34px;">
-        <h1>Reverse Timing Dotline</h1>
+        <h1>Timing Dotlines</h1>
         <p>Events counted from the first: time on the left, name on the right.</p>
       </div>
       <div class="grid" id="reverseGrid"></div>`;
@@ -761,7 +761,7 @@
     const n = {
       id: uid(),
       type: "reverse",
-      title: "Reverse " + idx,
+      title: "Timing " + idx,
       autoTitle: true,
       nodes: [ { id: uid(), name: "", time: floorMin(Date.now()) } ],
       links: []
@@ -826,7 +826,7 @@
     title.onblur = () => {
       if (!title.value.trim()) {
         const idx = db.notes.filter(x => x.type === "reverse").findIndex(x => x.id === n.id) + 1;
-        n.title = "Reverse " + idx;
+        n.title = "Timing " + idx;
         n.autoTitle = true;
         title.value = n.title;
         save();
