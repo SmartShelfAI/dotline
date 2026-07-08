@@ -660,25 +660,27 @@
     z-index: 1; pointer-events: none;
     transition: top .5s ease;
   }
-  .now-line::before {
-    content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px;
-    background: linear-gradient(to right,
-      var(--accent) 0%,
-      color-mix(in srgb, var(--accent) 20%, var(--bg)) 50%,
-      var(--accent) 100%);
-    background-size: 150% 100%;
-    -webkit-mask: repeating-linear-gradient(to right, #000 0 7px, transparent 7px 13px);
-            mask: repeating-linear-gradient(to right, #000 0 7px, transparent 7px 13px);
-    /* gentle "ripple on water from a light breeze": small, slow, back-and-forth */
-    animation: now-ripple 6.5s ease-in-out infinite;
+  /* A dashed sine wave that ripples VERTICALLY in place (a standing wave: the
+     crests rise and fall, the dashes never slide sideways). Wide waves, real
+     amplitude — like a gust stirring water. preserveAspectRatio=none stretches
+     the wavelength to the full width while the amplitude stays fixed in px. */
+  .now-wave {
+    position: absolute; left: 0; right: 0; top: -12px;
+    width: 100%; height: 24px; display: block; overflow: visible;
   }
-  @keyframes now-ripple {
-    0%, 100% { background-position: 36% 0; -webkit-mask-position: 0 0;   mask-position: 0 0; }
-    50%      { background-position: 64% 0; -webkit-mask-position: 5px 0; mask-position: 5px 0; }
+  .now-wave .s-edge { stop-color: var(--accent); }
+  .now-wave .s-mid  { stop-color: color-mix(in srgb, var(--accent) 22%, var(--bg)); }
+  .now-wave path {
+    d: path("M0,12 Q15,4 30,12 Q45,20 60,12 Q75,4 90,12 Q105,20 120,12");
+    animation: now-wave 4.5s ease-in-out infinite;
   }
-  @media (prefers-reduced-motion: reduce) { .now-line::before { animation: none; } }
+  @keyframes now-wave {
+    0%, 100% { d: path("M0,12 Q15,4 30,12 Q45,20 60,12 Q75,4 90,12 Q105,20 120,12"); }
+    50%      { d: path("M0,12 Q15,20 30,12 Q45,4 60,12 Q75,20 90,12 Q105,4 120,12"); }
+  }
+  @media (prefers-reduced-motion: reduce) { .now-wave path { animation: none; } }
   .now-label {
-    position: absolute; right: 22px; top: -10px; z-index: 2;
+    position: absolute; right: 22px; top: -28px; z-index: 2;
     background: var(--accent); color: #fff; white-space: nowrap;
     font-size: var(--fs-2xs); font-weight: var(--w-semibold);
     padding: 2px 8px; border-radius: 8px;
@@ -1591,7 +1593,16 @@
     if (!line) {
       line = document.createElement("div");
       line.className = "now-line";
-      line.innerHTML = `<span class="now-label"></span>`;
+      line.innerHTML = `
+        <svg class="now-wave" viewBox="0 0 120 24" preserveAspectRatio="none" aria-hidden="true">
+          <defs><linearGradient id="nowg">
+            <stop class="s-edge" offset="0"/><stop class="s-mid" offset="0.5"/><stop class="s-edge" offset="1"/>
+          </linearGradient></defs>
+          <path fill="none" stroke="url(#nowg)" stroke-width="2" stroke-dasharray="7 6"
+                stroke-linecap="round" vector-effect="non-scaling-stroke"
+                d="M0,12 Q15,4 30,12 Q45,20 60,12 Q75,4 90,12 Q105,20 120,12"/>
+        </svg>
+        <span class="now-label"></span>`;
       spine.appendChild(line);
     }
     const now = Date.now();
