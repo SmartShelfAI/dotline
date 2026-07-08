@@ -518,7 +518,8 @@
     padding: 16px; text-align: center; font-size: 16px; color: var(--muted);
     margin: 8px 0 20px;
   }
-  .tp-preview strong { display: block; color: var(--ink); font-size: 24px; margin-bottom: 5px; }
+  .tp-preview strong { display: block; color: var(--ink); font-size: 28px; font-variant-numeric: tabular-nums; margin-bottom: 4px; }
+  .tp-preview .tp-sub { font-size: 14px; color: var(--muted); }
   .tp-actions { display: flex; gap: 10px; }
   .tp-actions .tp-btn { flex: 1; height: 42px; border-radius: 10px; border: 1px solid var(--hairline);
     background: var(--surface-2); color: var(--ink); font-size: 15px; cursor: pointer; }
@@ -1368,7 +1369,8 @@
       durationMs = v * 60 * MS_MIN;
       offsetInput.value = formatDuration(durationMs);
       const nextTime = previousTime + durationMs;
-      preview.innerHTML = `<strong>${formatTime(nextTime, anchorDay)}</strong>${formatDuration(durationMs)} from previous`;
+      // the interval is the hero here; the resulting time is small secondary info
+      preview.innerHTML = `<strong>${formatDuration(durationMs)}</strong><span class="tp-sub">→ ${formatTime(nextTime, anchorDay)}</span>`;
     }
 
     slider.oninput = updatePreview;
