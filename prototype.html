@@ -952,7 +952,7 @@
         if (n.type === "reverse") {
           const live = document.createElement("button");
           live.className = "auth-btn" + (n.realtime ? " primary" : "");
-          live.textContent = n.realtime ? "◉ Live" : "◎ Live";
+          live.textContent = n.realtime ? "◉ Real Time" : "◎ Real Time";
           live.title = "Real-time mode: proportional spacing + a moving now-line";
           live.onclick = () => { n.realtime = !n.realtime; save(); render(); };
           slot.appendChild(live);
