@@ -500,8 +500,9 @@
   .node.hl .hl-star { opacity: 1; color: var(--accent); }
   .node.hl .dot { transform: scale(1.5); }
   .node.hl .node-label { font-size: calc(var(--fs-md) * 1.7); font-weight: var(--w-bold); letter-spacing: -0.02em; }
-  /* MOBILE highlight: throw the text full-width, centred, ABOVE the dot; the line
-     fades into the background behind the text (surface halo → dark-grey in dark) */
+  /* MOBILE highlight: throw the text full-width, centred, ABOVE the dot; the
+     vertical rail is cut before it reaches the text block and the text itself
+     carries a surface background so no line shines through. */
   @media (max-width: 640px) {
     .node.hl {
       grid-template-rows: auto auto auto;
@@ -516,6 +517,8 @@
       text-align: center;
       max-width: 96%;
       transform: translateX(calc(-1 * var(--shift)));
+      background: var(--surface);
+      border-radius: 8px;
     }
     .node.hl .node-alias {
       display: block; grid-row: 1;
@@ -525,13 +528,14 @@
     .node.hl .node-label {
       grid-row: 2;
       font-size: calc(var(--fs-md) * 1.5); line-height: 1.2; font-weight: var(--w-bold);
-      background: radial-gradient(130% 170% at 50% 55%, var(--surface) 48%, transparent 84%);
       padding: 2px 14px 6px; position: relative; z-index: 3;
     }
     .node.hl .dot {
       grid-row: 3; grid-column: 2; transform: scale(1.3);
       margin-top: 14px;   /* clear the clock from the text above */
     }
+    /* cut the top rail well above the time/date so the line never touches text */
+    .node.hl::before { bottom: calc(100% - 45px); }
   }
 
   /* analog clock hands inside reverse dots (div-based, reliable rotation) */
