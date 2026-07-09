@@ -1,0 +1,31 @@
+{
+  "name": "notes",
+  "version": "1.0.0",
+  "description": "A linear notebook: each note is a vertical line of connected points running down the center of the screen.",
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint prototype.html",
+    "lint:fix": "eslint prototype.html --fix",
+    "format": "prettier --write prototype.html",
+    "format:check": "prettier --check prototype.html",
+    "check": "npm run lint && npm run format:check",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SmartShelfAI/dotline.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/SmartShelfAI/dotline/issues"
+  },
+  "homepage": "https://github.com/SmartShelfAI/dotline#readme",
+  "devDependencies": {
+    "eslint": "^8.57.1",
+    "eslint-plugin-html": "^8.1.4",
+    "prettier": "^3.9.5"
+  }
+}

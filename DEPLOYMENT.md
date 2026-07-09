@@ -112,6 +112,7 @@ The three time modals are built only from these tokens: a big hero value
 ### Rebuild and deploy
 ```bash
 cd /Users/inxnik/nikita/135_fungeneering_com/notes
+npm run check        # ESLint + Prettier; fix issues before deploying
 ./deploy.sh          # build index.html + deploy frontend
 ./deploy.sh back     # deploy backend/app.py + restart dotline-api
 ./deploy.sh all      # both
@@ -119,6 +120,9 @@ cd /Users/inxnik/nikita/135_fungeneering_com/notes
 ```
 `deploy.sh` wraps `prototype.html` in the `<head>`/`<body>` skeleton → `index.html`
 and scps it. No nginx changes are needed for frontend deploys.
+
+Always run `npm run check` before deploying — it catches JS errors and formatting
+issues in `prototype.html`.
 
 The notes HTML is served with `Cache-Control: no-store` (a dedicated `location =
 /notes/` + `location = /notes/index.html` block in the nginx config), so updates

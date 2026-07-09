@@ -1,0 +1,22 @@
+{
+  "root": true,
+  "plugins": ["html"],
+  "env": {
+    "browser": true,
+    "es2022": true
+  },
+  "globals": {
+    "google": "readonly"
+  },
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "script"
+  },
+  "extends": ["eslint:recommended"],
+  "rules": {
+    "no-unused-vars": ["warn", { "args": "none", "caughtErrors": "none" }],
+    "no-console": "off",
+    "no-constant-condition": "warn",
+    "no-empty": ["error", { "allowEmptyCatch": true }]
+  }
+}
