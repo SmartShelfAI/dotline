@@ -606,6 +606,25 @@
     text-transform: uppercase; letter-spacing: 0.02em;
   }
 
+  /* Reverse timeline text sits above the moving "now" line. A surface-coloured
+     halo behind each text block punches a clean vertical gap around time/date
+     and event name so the dashed line never strikes through them. */
+  .spine.reverse .node-alias,
+  .spine.reverse .node-label {
+    position: relative;
+    z-index: 2;
+  }
+  .spine.reverse .node-alias::after,
+  .spine.reverse .node-label::after {
+    content: "";
+    position: absolute;
+    left: -4px; right: -4px;
+    top: -10px; bottom: -10px;
+    background: var(--surface);
+    border-radius: 8px;
+    z-index: -1;
+  }
+
   /* label: main item name to the RIGHT of the dot */
   .node-label {
     grid-column: 3;
@@ -678,6 +697,86 @@
   /* mobile featured re-flows the row (the dot drops to its own line), so the
      centre anchor no longer tracks the dot — hide the incoming arrowheads */
   @media (max-width: 640px) { .node.hl .arrowhead { display: none; } }
+
+  /* MOBILE reverse timeline: time + title centred above/below the dot.
+     The dot moves to the true centre of the board so the whole item feels
+     balanced on a narrow screen. */
+  @media (max-width: 640px) {
+    .spine.reverse .node {
+      grid-template-columns: 1fr auto 1fr;
+      grid-template-rows: auto auto auto;
+      row-gap: 6px;
+      padding: 12px 0;
+      align-items: center;
+    }
+    .spine.reverse .node-alias,
+    .spine.reverse .node-label {
+      grid-column: 1 / -1;
+      justify-self: center;
+      text-align: center;
+      max-width: 96%;
+    }
+    .spine.reverse .node-alias { grid-row: 1; }
+    .spine.reverse .node-label { grid-row: 3; }
+    .spine.reverse .dot,
+    .spine.reverse .node.hl .dot {
+      grid-row: 2; grid-column: 2;
+      margin-top: 0; transform: none;
+    }
+    .spine.reverse .node.hl .node-alias { grid-row: 1; }
+    .spine.reverse .node.hl .node-label {
+      grid-row: 3;
+      background: transparent;   /* surface halo is handled by the shared rule */
+      padding: 2px 0;
+    }
+    .spine.reverse .node.hl {
+      padding: 12px 0;
+    }
+    /* rail and arrowheads track the centred dot */
+    .spine.reverse .node::before,
+    .spine.reverse .node::after,
+    .spine.reverse .link::before {
+      left: 50%;
+    }
+    .spine.reverse .link {
+      padding-right: 0;
+    }
+    /* arrowheads live inside the dot cell, not anchored to the whole row height */
+    .spine.reverse .arrowhead,
+    .spine.reverse .node.hl .arrowhead {
+      display: block;
+      position: relative;
+      grid-column: 2;
+      grid-row: 2;
+      left: auto;
+      transform: none;
+      justify-self: center;
+    }
+    .spine.reverse .arrowhead.slot-top,
+    .spine.reverse .node.hl .arrowhead.slot-top {
+      top: auto;
+      align-self: start;
+      margin-top: -14px;
+    }
+    .spine.reverse .arrowhead.slot-bottom,
+    .spine.reverse .node.hl .arrowhead.slot-bottom {
+      bottom: auto;
+      align-self: end;
+      margin-bottom: -14px;
+    }
+    .spine.reverse .node.hl .arrowhead.slot-top {
+      margin-top: calc(-14px - var(--dot) * 0.15);
+    }
+    .spine.reverse .node.hl .arrowhead.slot-bottom {
+      margin-bottom: calc(-14px - var(--dot) * 0.15);
+    }
+    .spine.reverse .node.hl.arr-in-top::before {
+      bottom: calc(50% + var(--dot) / 2 * 1.3 + 14px);
+    }
+    .spine.reverse .node.hl.arr-in-bottom::after {
+      top: calc(50% + var(--dot) / 2 * 1.3 + 14px);
+    }
+  }
 
   /* real-time mode: a dashed "now" line across the board that moves as time passes.
      Sits BEHIND the text (z-index 1 < nodes) and fades toward the background in
