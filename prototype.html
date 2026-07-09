@@ -396,16 +396,21 @@
   .node, .link { position: relative; z-index: 2; }
 
   /* rail runs vertically through the exact horizontal center */
-  .node::before, .link::before {
+  .node::before, .node::after, .link::before {
     content: "";
     position: absolute;
     left: calc(50% - var(--shift)); transform: translateX(-50%);
     width: 3px; background: var(--line);
-    top: 0; bottom: 0;
     z-index: 0;
   }
-  .spine > .node:first-of-type::before { top: 50%; }
-  .node.ghost::before { display: none; }
+  /* the rail through a node is split — top half (::before) and bottom half
+     (::after), meeting behind the centred dot — so an arrowhead can open a
+     clean gap on just one side without touching the other. */
+  .node::before { top: 0; bottom: 50%; }
+  .node::after  { top: 50%; bottom: 0; }
+  .link::before { top: 0; bottom: 0; }
+  .spine > .node:first-of-type::before { display: none; }  /* nothing above the anchor */
+  .node.ghost::before, .node.ghost::after { display: none; }
 
   /* SVG overlay used only while dragging a dot to draw the stressed string */
   .spine-wire {
@@ -444,7 +449,7 @@
   .node.dragging .node-label,
   .node.dragging .node-alias,
   .node.dragging .hl-star { opacity: 0; }
-  .node.wire-hidden::before, .link.wire-hidden::before { opacity: 0; }
+  .node.wire-hidden::before, .node.wire-hidden::after, .link.wire-hidden::before { opacity: 0; }
   .node.ghost.wire-hidden { opacity: 0; transition: opacity .15s; }
   .node.removing { opacity: 0; transform: translateX(var(--snap-dx, 120px)) scale(.9); }
   .node.snap-back { transition: transform .22s cubic-bezier(.2,.8,.2,1); transform: none; }
@@ -629,28 +634,36 @@
      hang beside the stretched string (a text label, if any, stays put) */
   .link.wire-hidden .link-add { opacity: 0; }
 
-  /* Directional arrow, built with NO colour masks (those left notches/tails on
-     the dot). Instead the rail (::before) is simply SHORTENED to leave room for
-     the triangle + gap, and the target dot's rail stub is suppressed via a
-     .no-stub-* class in JS. The dot is opaque, so it is always a clean circle.
-     A clean triangle (::after) sits at the shaft's end; a real ~5px gap follows
-     before the dot. Direction: down = next later, up = next earlier. */
-  .link.arr-down::before { bottom: 9px; }   /* shaft stops above the arrowhead */
-  .link.arr-up::before   { top: 9px; }
-  .link.arr-down::after, .link.arr-up::after {
-    content: ""; position: absolute;
-    left: calc(50% - var(--shift)); transform: translateX(-50%);
+  /* Directional arrowhead. It sits ON the node it points at, anchored to the
+     dot's centre (50%), so the triangle→circle gap is CONSTANT no matter how
+     tall the row is — a plain point and a featured one (bigger dot + bigger
+     label) get exactly the same gap. The node's rail on that side is shortened
+     by the matching amount to leave a clean opening for the triangle + gap.
+     Direction: down = next later, up = next earlier. The dot stays a clean
+     opaque circle (no colour masks). */
+  .arrowhead {
+    position: absolute; left: calc(50% - var(--shift)); transform: translateX(-50%);
     width: 0; height: 0;
     border-left: 6px solid transparent; border-right: 6px solid transparent;
     z-index: 1; pointer-events: none;
+    transition: top .18s, bottom .18s;
   }
-  .link.arr-down::after { bottom: 0; border-top: 9px solid var(--line); }     /* tip down */
-  .link.arr-up::after   { top: 0; border-bottom: 9px solid var(--line); }     /* tip up */
-  .link.wire-hidden::after { opacity: 0; }
-  /* suppress the rail stub between a dot and an arrowhead pointing at it */
-  .node.no-stub-top::before { top: 50%; }
-  .node.no-stub-bottom::before { bottom: 50%; }
-  .node.no-stub-top.no-stub-bottom::before { display: none; }
+  .arrowhead.down { border-top: 9px solid var(--line); }     /* tip points down */
+  .arrowhead.up   { border-bottom: 9px solid var(--line); }  /* tip points up */
+  /* dot radius (--dot/2) + 5px gap + 9px arrowhead = distance from the centre */
+  .arrowhead.slot-top    { top:    calc(50% - var(--dot) / 2 - 14px); }
+  .arrowhead.slot-bottom { bottom: calc(50% - var(--dot) / 2 - 14px); }
+  .node.arr-in-top::before   { bottom: calc(50% + var(--dot) / 2 + 14px); }
+  .node.arr-in-bottom::after { top:    calc(50% + var(--dot) / 2 + 14px); }
+  /* featured points scale the dot 1.5× — widen every offset so the gap holds */
+  .node.hl .arrowhead.slot-top    { top:    calc(50% - var(--dot) / 2 * 1.5 - 14px); }
+  .node.hl .arrowhead.slot-bottom { bottom: calc(50% - var(--dot) / 2 * 1.5 - 14px); }
+  .node.hl.arr-in-top::before   { bottom: calc(50% + var(--dot) / 2 * 1.5 + 14px); }
+  .node.hl.arr-in-bottom::after { top:    calc(50% + var(--dot) / 2 * 1.5 + 14px); }
+  .node.dragging .arrowhead { opacity: 0; }
+  /* mobile featured re-flows the row (the dot drops to its own line), so the
+     centre anchor no longer tracks the dot — hide the incoming arrowheads */
+  @media (max-width: 640px) { .node.hl .arrowhead { display: none; } }
 
   /* real-time mode: a dashed "now" line across the board that moves as time passes.
      Sits BEHIND the text (z-index 1 < nodes) and fades toward the background in
@@ -1325,8 +1338,15 @@
     }
   }
 
-  // suppress the rail stub between a dot and an arrowhead that points at it, so
-  // the line terminates cleanly at the triangle with a gap before the circle
+  // Attach a directional arrowhead to each node an arrow points AT, on the side
+  // it enters from. The arrowhead is anchored to the dot (via CSS), so the gap
+  // to the circle stays identical for plain and featured points.
+  function addArrowhead(node, side) {
+    node.classList.add(side === "top" ? "arr-in-top" : "arr-in-bottom");
+    const a = document.createElement("div");
+    a.className = "arrowhead " + (side === "top" ? "down slot-top" : "up slot-bottom");
+    node.appendChild(a);
+  }
   function applyArrowStubs(spine, n) {
     const els = Array.from(spine.querySelectorAll(".node:not(.ghost)"));
     const dirOf = (i) => {
@@ -1338,8 +1358,8 @@
     };
     for (let i = 0; i < n.nodes.length - 1; i++) {
       const dir = dirOf(i);
-      if (dir === "down" && els[i + 1]) els[i + 1].classList.add("no-stub-top");
-      else if (dir === "up" && els[i]) els[i].classList.add("no-stub-bottom");
+      if (dir === "down" && els[i + 1]) addArrowhead(els[i + 1], "top");
+      else if (dir === "up" && els[i]) addArrowhead(els[i], "bottom");
     }
   }
 
