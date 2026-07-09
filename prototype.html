@@ -293,7 +293,16 @@
     .carousel .card {
       flex: 0 0 70%; width: auto; padding: 14px;
       scroll-snap-align: center; scroll-snap-stop: always; /* page one card per swipe */
-      aspect-ratio: 1.4 / 1; min-height: 0; overflow: hidden; /* smaller, less bulky + ears */
+      aspect-ratio: 1.15 / 1; min-height: 220px; overflow: hidden; /* taller so full preview + title fit */
+    }
+    .carousel .card .title,
+    .carousel .card .meta { flex-shrink: 0; }
+    .carousel .card .mini {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      align-items: flex-start;
+      overflow: hidden;
     }
   }
 
@@ -1101,7 +1110,7 @@
     const holeFill = col ? col.bg : "var(--surface)";
     const shown = Math.min(n.nodes.length, 4);
     const gap = 26, top = 6, x = 11, r = 6;
-    const h = top + (shown - 1) * gap + 8;
+    const h = top + (shown - 1) * gap + 8 + (n.nodes.length > shown ? 18 : 0);
     let s = `<svg width="100%" height="${h}" viewBox="0 0 160 ${h}">`;
     const y0 = top + 2, y1 = top + (shown - 1) * gap + 2;
     s += `<line x1="${x}" y1="${y0}" x2="${x}" y2="${y1}" stroke="${stroke}" stroke-width="2.5"/>`;
