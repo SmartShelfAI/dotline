@@ -507,11 +507,15 @@
       grid-template-rows: auto auto auto;
       row-gap: 4px; padding: 14px 0;
     }
-    /* both text lines span full width and centre; the alias sits on top as a
-       small first line (number for free notes, time for timing notes) */
+    /* Highlight text spans the whole row but is shifted left by --shift so its
+       visual centre aligns with the dot centre, not with the board centre. */
     .node.hl .node-alias,
     .node.hl .node-label {
-      grid-column: 1 / -1; justify-self: center; text-align: center; max-width: 96%;
+      grid-column: 1 / -1;
+      justify-self: center;
+      text-align: center;
+      max-width: 96%;
+      transform: translateX(calc(-1 * var(--shift)));
     }
     .node.hl .node-alias {
       display: block; grid-row: 1;
