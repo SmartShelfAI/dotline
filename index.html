@@ -1089,7 +1089,7 @@
     /* Highlight text spans the whole row but is shifted left by --shift so its
        visual centre aligns with the dot centre, not with the board centre. */
     .node.hl .node-alias,
-    .node.hl .node-label {
+    .node.hl .node-label-wrap {
       grid-column: 1 / -1;
       justify-self: center;
       text-align: center;
@@ -1107,12 +1107,22 @@
       opacity: 0.95;
       padding: 0 6px;
     }
-    .node.hl .node-label {
+    .node.hl .node-label-wrap {
       grid-row: 2;
+      padding: 0;
+    }
+    .node.hl .node-label {
+      grid-column: auto;
+      justify-self: auto;
+      text-align: left;
+      max-width: none;
+      transform: none;
+      background: transparent;
+      border-radius: 0;
       font-size: calc(var(--fs-md) * 1.5);
       line-height: 1.2;
       font-weight: var(--w-bold);
-      padding: 2px 14px 6px;
+      padding: 2px 28px 6px 14px;
       position: relative;
       z-index: 3;
     }
@@ -1731,6 +1741,131 @@
     outline: 2px solid var(--accent);
     outline-offset: 3px;
   }
+
+  /* ---------- attached notes on points ---------- */
+  .node-label-wrap {
+    grid-column: 3;
+    position: relative;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+  }
+  .node-label {
+    width: 100%;
+    padding-right: 28px;
+  }
+  .node-note-btn {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--faint);
+    font-size: var(--fs-md);
+    font-weight: var(--w-semibold);
+    cursor: pointer;
+    padding: 4px 8px;
+    line-height: 1;
+    border-radius: 8px;
+    z-index: 3;
+    transition:
+      color 0.12s,
+      background 0.12s;
+  }
+  .node-note-btn:hover,
+  .node-note-btn:focus {
+    color: var(--accent);
+    background: var(--surface-2);
+  }
+  .node-note-btn.has-note {
+    color: var(--accent);
+  }
+  .node.done .node-note-btn {
+    color: var(--faint);
+  }
+  .node.done .node-note-btn.has-note {
+    color: var(--muted);
+  }
+
+  /* side panel / mobile overlay for attached note editor */
+  .node-detail-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 360px;
+    background: var(--surface);
+    border-left: 1px solid var(--hairline);
+    box-shadow: var(--shadow);
+    z-index: 200;
+    transform: translateX(100%);
+    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+  }
+  .node-detail-panel.open {
+    transform: translateX(0);
+  }
+  .node-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .node-detail-back {
+    appearance: none;
+    border: 1px solid var(--hairline);
+    background: var(--surface);
+    color: var(--ink);
+    border-radius: 10px;
+    padding: 0 12px;
+    height: 36px;
+    font-size: var(--fs-sm);
+    font-weight: var(--w-medium);
+    cursor: pointer;
+  }
+  .node-detail-title {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: var(--fs-md);
+    font-weight: var(--w-semibold);
+    padding: 0;
+  }
+  .node-detail-title::placeholder {
+    color: var(--faint);
+  }
+  .node-detail-body {
+    flex: 1;
+    border: none;
+    outline: none;
+    resize: none;
+    background: transparent;
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: var(--fs-base);
+    line-height: 1.6;
+    padding: 16px;
+  }
+  .node-detail-body::placeholder {
+    color: var(--faint);
+  }
+  @media (max-width: 640px) {
+    .node-detail-panel {
+      width: 100%;
+      transform: translateY(100%);
+      border-left: none;
+    }
+    .node-detail-panel.open {
+      transform: translateY(0);
+    }
+  }
 </style>
 
 <div class="app">
@@ -1758,6 +1893,7 @@
         if (raw && Array.isArray(raw.notes)) {
           migrateReverseTimes(raw.notes);
           migrateAutoNums(raw.notes);
+          migrateNodeDetails(raw.notes);
           return raw;
         }
         // migrate from the old "throughline.v1" key so existing notes survive the rename
@@ -1765,6 +1901,7 @@
         if (old && Array.isArray(old.notes)) {
           migrateReverseTimes(old.notes);
           migrateAutoNums(old.notes);
+          migrateNodeDetails(old.notes);
           localStorage.setItem(STORE, JSON.stringify(old));
           return old;
         }
@@ -1776,9 +1913,9 @@
             id: uid(),
             title: "Morning routine",
             nodes: [
-              { id: uid(), name: "Wake up" },
-              { id: uid(), name: "" },
-              { id: uid(), name: "Coffee" },
+              { id: uid(), name: "Wake up", detail: { title: "", body: "" } },
+              { id: uid(), name: "", detail: { title: "", body: "" } },
+              { id: uid(), name: "Coffee", detail: { title: "", body: "" } },
             ],
             links: [{ label: "no snooze" }, { label: "" }],
           },
@@ -1823,6 +1960,17 @@
           x.title = (rev ? "Timing " : "Dot note ") + x.autoNum;
         }
       }
+    }
+    // ensure every node has an attached note object
+    function migrateNodeDetails(notes) {
+      notes.forEach(n => {
+        if (!Array.isArray(n.nodes)) return;
+        n.nodes.forEach(node => {
+          if (!node.detail || typeof node.detail !== "object") {
+            node.detail = { title: "", body: "" };
+          }
+        });
+      });
     }
     function save() {
       localStorage.setItem(STORE, JSON.stringify(db));
@@ -1881,6 +2029,7 @@
     let nowCtx = null; // { spine, n } of the current real-time spine (for resize)
 
     function render() {
+      closeNodeDetail();
       if (nowTimer) {
         clearInterval(nowTimer);
         nowTimer = null;
@@ -2104,7 +2253,7 @@
         type: "free",
         autoNum: nextAutoNum(false),
         autoTitle: true,
-        nodes: [{ id: uid(), name: "" }],
+        nodes: [{ id: uid(), name: "", detail: { title: "", body: "" } }],
         links: [],
       };
       n.title = autoTitleFor(n);
@@ -2119,7 +2268,7 @@
         type: "reverse",
         autoNum: nextAutoNum(true),
         autoTitle: true,
-        nodes: [{ id: uid(), name: "", time: floorMin(Date.now()) }],
+        nodes: [{ id: uid(), name: "", time: floorMin(Date.now()), detail: { title: "", body: "" } }],
         links: [],
       };
       n.title = autoTitleFor(n);
@@ -2501,6 +2650,22 @@
         }
       };
 
+      const wrap = document.createElement("div");
+      wrap.className = "node-label-wrap";
+      wrap.appendChild(label);
+      if (!viewOnly) {
+        const noteBtn = document.createElement("button");
+        noteBtn.className = "node-note-btn" + (hasNodeDetail(node) ? " has-note" : "");
+        noteBtn.textContent = "›";
+        noteBtn.title = "Open note";
+        noteBtn.setAttribute("aria-label", "Open note");
+        noteBtn.onclick = e => {
+          e.stopPropagation();
+          openNodeDetail(n, node, i);
+        };
+        wrap.appendChild(noteBtn);
+      }
+
       if (!viewOnly) {
         // keyboard: Enter/Space toggles done, Delete/Backspace removes the node
         dot.onkeydown = e => {
@@ -2515,8 +2680,8 @@
         bindDotDrag(dot, row, n, node, i, spine);
       }
 
-      if (viewOnly) row.append(alias, dot, label);
-      else row.append(makeStar(node, row), alias, dot, label);
+      if (viewOnly) row.append(alias, dot, wrap);
+      else row.append(makeStar(node, row), alias, dot, wrap);
       return row;
     }
 
@@ -2538,6 +2703,81 @@
         label.textContent = "item name";
         label.classList.add("is-hint");
       }
+    }
+
+    function hasNodeDetail(node) {
+      return !!(node.detail && (node.detail.title || node.detail.body));
+    }
+
+    function openNodeDetail(n, node, i) {
+      if (viewOnly) return;
+      closeNodeDetail();
+      const panel = document.createElement("div");
+      panel.className = "node-detail-panel";
+      panel.innerHTML = `
+        <div class="node-detail-header">
+          <button class="node-detail-back" type="button">←</button>
+          <input class="node-detail-title" type="text" placeholder="note ${i + 1}" />
+        </div>
+        <textarea class="node-detail-body" placeholder="Write a note…"></textarea>
+      `;
+      const titleInput = panel.querySelector(".node-detail-title");
+      const bodyInput = panel.querySelector(".node-detail-body");
+      const backBtn = panel.querySelector(".node-detail-back");
+
+      const autoTitle = !node.detail.title;
+      titleInput.value = node.detail.title || "note " + (i + 1);
+      bodyInput.value = node.detail.body || "";
+
+      titleInput.onfocus = () => {
+        if (autoTitle && titleInput.value === "note " + (i + 1)) {
+          titleInput.value = "";
+        }
+      };
+      titleInput.oninput = () => {
+        node.detail.title = titleInput.value;
+        save();
+        updateNodeNoteBtn(n, node);
+      };
+      titleInput.onblur = () => {
+        if (!titleInput.value.trim()) {
+          node.detail.title = "";
+          titleInput.value = "note " + (i + 1);
+        } else {
+          node.detail.title = titleInput.value;
+        }
+        save();
+        updateNodeNoteBtn(n, node);
+      };
+      bodyInput.oninput = () => {
+        node.detail.body = bodyInput.value;
+        save();
+        updateNodeNoteBtn(n, node);
+      };
+      backBtn.onclick = () => closeNodeDetail();
+
+      document.body.appendChild(panel);
+      panel.offsetHeight; // force reflow
+      panel.classList.add("open");
+      setTimeout(() => bodyInput.focus(), 50);
+    }
+
+    function closeNodeDetail() {
+      const panel = document.querySelector(".node-detail-panel");
+      if (!panel) return;
+      panel.classList.remove("open");
+      panel.addEventListener("transitionend", () => panel.remove(), { once: true });
+    }
+
+    function updateNodeNoteBtn(n, node) {
+      const spine = document.getElementById("spine");
+      if (!spine) return;
+      const i = n.nodes.indexOf(node);
+      if (i < 0) return;
+      const row = spine.querySelector('.node[data-index="' + i + '"]');
+      if (!row) return;
+      const btn = row.querySelector(".node-note-btn");
+      if (btn) btn.classList.toggle("has-note", hasNodeDetail(node));
     }
 
     function linkRow(n, i) {
@@ -2604,7 +2844,7 @@
     }
 
     function addNodeAt(n, i) {
-      n.nodes.splice(i + 1, 0, { id: uid(), name: "" });
+      n.nodes.splice(i + 1, 0, { id: uid(), name: "", detail: { title: "", body: "" } });
       n.links.splice(i, 0, { label: "" });
     }
 
@@ -2642,6 +2882,10 @@
     function removeNode(n, i, spine, opts) {
       opts = opts || {};
       if (n.nodes.length <= 1) return;
+      const node = n.nodes[i];
+      if (hasNodeDetail(node)) {
+        if (!confirm("This point has a note. Delete it too?")) return;
+      }
       if (opts.onDelete) opts.onDelete(i);
       else {
         n.nodes.splice(i, 1);
@@ -2885,6 +3129,22 @@
         }
       };
 
+      const wrap = document.createElement("div");
+      wrap.className = "node-label-wrap";
+      wrap.appendChild(label);
+      if (!viewOnly) {
+        const noteBtn = document.createElement("button");
+        noteBtn.className = "node-note-btn" + (hasNodeDetail(node) ? " has-note" : "");
+        noteBtn.textContent = "›";
+        noteBtn.title = "Open note";
+        noteBtn.setAttribute("aria-label", "Open note");
+        noteBtn.onclick = e => {
+          e.stopPropagation();
+          openNodeDetail(n, node, i);
+        };
+        wrap.appendChild(noteBtn);
+      }
+
       const revOpts = {
         draw: drawReverseSpine,
         onAdd: i => addReverseNodeAt(n, i),
@@ -2913,8 +3173,8 @@
         bindDotDrag(dot, row, n, node, i, spine, revOpts);
       }
 
-      if (viewOnly) row.append(alias, dot, label);
-      else row.append(makeStar(node, row), alias, dot, label);
+      if (viewOnly) row.append(alias, dot, wrap);
+      else row.append(makeStar(node, row), alias, dot, wrap);
       return row;
     }
 
@@ -3081,7 +3341,7 @@
     function addReverseNodeAt(n, i) {
       const prevTime = n.nodes[i].time;
       const dur = -30 * MS_MIN; // reverse: next event is 30 min earlier
-      n.nodes.splice(i + 1, 0, { id: uid(), name: "", time: prevTime + dur });
+      n.nodes.splice(i + 1, 0, { id: uid(), name: "", time: prevTime + dur, detail: { title: "", body: "" } });
       n.links.splice(i, 0, { duration: dur });
     }
 
@@ -3471,6 +3731,17 @@
 
         if (dx <= -THRESH && n.nodes.length > 1) {
           // release LEFT → delete
+          if (hasNodeDetail(n.nodes[i])) {
+            if (!confirm("This point has a note. Delete it too?")) {
+              dragState = null;
+              row.classList.remove("dragging");
+              row.classList.add("snap-back");
+              row.style.transform = "";
+              updateWire(spine);
+              setTimeout(() => row.classList.remove("snap-back"), 250);
+              return;
+            }
+          }
           dragState.snapping = true;
           updateWire(spine, i, dx);
           row.classList.remove("dragging");
