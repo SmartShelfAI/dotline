@@ -2697,7 +2697,7 @@
     }
 
     function hasNodeDetail(node) {
-      return !!(node.detail && (node.detail.title || node.detail.body));
+      return !!(node && node.detail && (node.detail.title || node.detail.body));
     }
 
     const NOTE_ICON_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M20 14V7C20 5.34315 18.6569 4 17 4H7C5.34315 4 4 5.34315 4 7V17C4 18.6569 5.34315 20 7 20H13.5M20 14L13.5 20M20 14H15.5C14.3954 14 13.5 14.8954 13.5 16V20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 8H16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 12H12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -2718,6 +2718,9 @@
 
     function openNodeDetail(n, node, i) {
       if (viewOnly) return;
+      if (!node.detail || typeof node.detail !== "object") {
+        node.detail = { title: "", body: "" };
+      }
       closeNodeDetail();
       const panel = document.createElement("div");
       panel.className = "node-detail-panel";
@@ -3996,6 +3999,9 @@
       try {
         const server = await api("GET", "/notes");
         if (server.notes && server.notes.length) {
+          migrateReverseTimes(server.notes);
+          migrateAutoNums(server.notes);
+          migrateNodeDetails(server.notes);
           db = { notes: server.notes }; // adopt cloud copy
         } else if (justLoggedIn && db.notes && db.notes.length) {
           await api("PUT", "/notes", { notes: db.notes }); // migrate guest notes up
