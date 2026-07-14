@@ -585,12 +585,12 @@
     .carousel .card {
       flex: 0 0 70%;
       width: auto;
-      padding: 14px;
+      padding: 12px;
       scroll-snap-align: center;
       scroll-snap-stop: always; /* page one card per swipe */
-      aspect-ratio: 1.15 / 1;
-      min-height: 220px;
-      overflow: hidden; /* taller so full preview + title fit */
+      aspect-ratio: 1.5 / 1;
+      min-height: 170px;
+      overflow: hidden; /* full preview + title fit */
     }
     .carousel .card .title,
     .carousel .card .meta {
@@ -599,6 +599,7 @@
     .carousel .card .mini {
       flex: 1 1 auto;
       min-height: 0;
+      padding-top: 8px;
       display: flex;
       align-items: flex-start;
       overflow: hidden;
