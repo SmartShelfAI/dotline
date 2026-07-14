@@ -1096,11 +1096,13 @@
     .node.hl .node-label-wrap {
       grid-row: 2;
       padding: 0;
+      justify-self: stretch;
+      width: 100%;
     }
     .node.hl .node-label {
       grid-column: auto;
       justify-self: auto;
-      text-align: left;
+      text-align: center;
       max-width: none;
       transform: none;
       background: transparent;
@@ -1111,6 +1113,11 @@
       padding: 2px 14px 6px;
       position: relative;
       z-index: 3;
+      flex: 1 1 auto;
+    }
+    .node.hl .node-note-btn {
+      margin-left: auto;
+      align-self: center;
     }
     .node.hl .dot {
       grid-row: 3;
