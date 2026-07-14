@@ -2754,6 +2754,12 @@
         save();
         updateNodeNoteBtn(n, node);
       };
+      bodyInput.onkeydown = e => {
+        if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          e.preventDefault();
+          continueDetailList(bodyInput);
+        }
+      };
       backBtn.onclick = () => closeNodeDetail();
 
       document.body.appendChild(panel);
@@ -2767,6 +2773,28 @@
       if (!panel) return;
       panel.classList.remove("open");
       panel.addEventListener("transitionend", () => panel.remove(), { once: true });
+    }
+
+    // In the attached-note body: plain Enter starts a new line.
+    // If the current line begins with "- " we continue a markdown-style list.
+    // If the current line is exactly "- " we end the list (no new bullet).
+    function continueDetailList(input) {
+      const start = input.selectionStart;
+      const end = input.selectionEnd;
+      const value = input.value;
+      const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+      const lineEnd = value.indexOf("\n", start);
+      const currentLine = value.slice(lineStart, lineEnd === -1 ? value.length : lineEnd);
+      const before = value.slice(0, start);
+      const after = value.slice(end);
+      let insert = "\n";
+      if (/^-\s/.test(currentLine) && currentLine !== "- ") {
+        insert = "\n- ";
+      }
+      input.value = before + insert + after;
+      const pos = start + insert.length;
+      input.setSelectionRange(pos, pos);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
     }
 
     function updateNodeNoteBtn(n, node) {
