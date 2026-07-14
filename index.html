@@ -1899,6 +1899,33 @@
   .node-detail-body::placeholder {
     color: var(--faint);
   }
+  .node-detail-links {
+    border-top: 1px solid var(--hairline);
+    padding: 10px 16px;
+    font-size: var(--fs-sm);
+    color: var(--muted);
+    max-height: 120px;
+    overflow-y: auto;
+  }
+  .node-detail-links:empty {
+    display: none;
+  }
+  .node-detail-links-label {
+    font-weight: var(--w-medium);
+    margin-bottom: 6px;
+  }
+  .node-detail-links a {
+    display: block;
+    color: var(--accent);
+    text-decoration: underline;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-bottom: 4px;
+  }
+  .node-detail-links a:hover {
+    color: var(--accent-strong);
+  }
   @media (max-width: 640px) {
     .node-detail-panel {
       width: 100%;
@@ -2785,14 +2812,17 @@
           <input class="node-detail-title" type="text" placeholder="note ${i + 1}" />
         </div>
         <textarea class="node-detail-body" placeholder="Write a note…"></textarea>
+        <div class="node-detail-links"></div>
       `;
       const titleInput = panel.querySelector(".node-detail-title");
       const bodyInput = panel.querySelector(".node-detail-body");
+      const linksEl = panel.querySelector(".node-detail-links");
       const backBtn = panel.querySelector(".node-detail-back");
 
       titleInput.placeholder = "note " + (i + 1);
       titleInput.value = node.detail.title || "";
       bodyInput.value = node.detail.body || "";
+      updateDetailLinks(node.detail.body, linksEl);
 
       titleInput.oninput = () => {
         node.detail.title = titleInput.value;
@@ -2812,6 +2842,7 @@
           bodyInput.setSelectionRange(start, start);
         }
         node.detail.body = bodyInput.value;
+        updateDetailLinks(node.detail.body, linksEl);
         save();
         updateNodeNoteBtn(n, node);
       };
@@ -2859,6 +2890,33 @@
       const pos = start + insert.length;
       input.setSelectionRange(pos, pos);
       input.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    function findUrls(text) {
+      const urlRe = /https?:\/\/[^\s<>"{}|\\^`[\]]+/gi;
+      const urls = [];
+      let m;
+      while ((m = urlRe.exec(text)) !== null) urls.push(m[0]);
+      return urls;
+    }
+
+    function updateDetailLinks(text, container) {
+      if (!container) return;
+      container.innerHTML = "";
+      const urls = findUrls(text || "");
+      if (!urls.length) return;
+      const label = document.createElement("div");
+      label.className = "node-detail-links-label";
+      label.textContent = urls.length === 1 ? "Link in note" : "Links in note";
+      container.appendChild(label);
+      urls.forEach(url => {
+        const a = document.createElement("a");
+        a.href = url;
+        a.target = "_blank";
+        a.rel = "noopener";
+        a.textContent = url;
+        container.appendChild(a);
+      });
     }
 
     function updateNodeNoteBtn(n, node) {
