@@ -34,6 +34,15 @@
 - `.node.hl .node-note-btn` прижимается к правому краю обёртки через
   `margin-left: auto`.
 
+## 2026-07-13 — attached notes: кликабельные ссылки в shared view
+
+### Решение
+- В shared (read-only) просмотре под точками с заметками показывается блок
+  `.node-detail-text` с заголовком и телом заметки.
+- URL в теле заметки автоматически оборачиваются в `<a target="_blank"
+  rel="noopener">` через функцию `linkify()`.
+- В обычном редакторе attached notes остаётся `textarea` (plain text).
+
 ## 2026-07-13 — attached notes: автозамена дефиса на точку
 
 ### Поведение

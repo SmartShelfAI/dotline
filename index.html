@@ -1134,6 +1134,9 @@
       margin-left: auto;
       align-self: center;
     }
+    .node.hl .node-detail-text {
+      grid-column: 1 / -1;
+    }
     .node.hl .dot {
       grid-row: 3;
       grid-column: 2;
@@ -1802,6 +1805,31 @@
   }
   .node.done .node-note-btn.has-note {
     color: var(--muted);
+  }
+
+  /* attached note text shown in shared/read-only view */
+  .node-detail-text {
+    grid-column: 3;
+    font-size: var(--fs-sm);
+    color: var(--muted);
+    background: var(--surface-2);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-top: 6px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+  .node-detail-text-title {
+    font-weight: var(--w-semibold);
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .node-detail-text-body a {
+    color: var(--accent);
+    text-decoration: underline;
+  }
+  .node-detail-text-body a:hover {
+    color: var(--accent-strong);
   }
 
   /* side panel / mobile overlay for attached note editor */
@@ -2693,8 +2721,13 @@
         bindDotDrag(dot, row, n, node, i, spine);
       }
 
-      if (viewOnly) row.append(alias, dot, wrap);
-      else row.append(makeStar(node, row), alias, dot, wrap);
+      if (viewOnly) {
+        row.append(alias, dot, wrap);
+        const detailText = renderNodeDetailText(node);
+        if (detailText) row.appendChild(detailText);
+      } else {
+        row.append(makeStar(node, row), alias, dot, wrap);
+      }
       return row;
     }
 
@@ -2837,6 +2870,32 @@
       if (!row) return;
       const btn = row.querySelector(".node-note-btn");
       if (btn) renderNoteBtnContent(btn, node);
+    }
+
+    function linkify(text) {
+      const urlRe = /https?:\/\/[^\s<>"{}|\\^`[\]]+/gi;
+      return escapeHtml(text).replace(urlRe, url => {
+        return `<a href="${escapeAttr(url)}" target="_blank" rel="noopener">${url}</a>`;
+      });
+    }
+
+    function renderNodeDetailText(node) {
+      if (!hasNodeDetail(node)) return null;
+      const el = document.createElement("div");
+      el.className = "node-detail-text";
+      if (node.detail.title && node.detail.title.trim()) {
+        const title = document.createElement("div");
+        title.className = "node-detail-text-title";
+        title.textContent = node.detail.title;
+        el.appendChild(title);
+      }
+      if (node.detail.body && node.detail.body.trim()) {
+        const body = document.createElement("div");
+        body.className = "node-detail-text-body";
+        body.innerHTML = linkify(node.detail.body).replace(/\n/g, "<br>");
+        el.appendChild(body);
+      }
+      return el;
     }
 
     function linkRow(n, i) {
@@ -3230,8 +3289,13 @@
         bindDotDrag(dot, row, n, node, i, spine, revOpts);
       }
 
-      if (viewOnly) row.append(alias, dot, wrap);
-      else row.append(makeStar(node, row), alias, dot, wrap);
+      if (viewOnly) {
+        row.append(alias, dot, wrap);
+        const detailText = renderNodeDetailText(node);
+        if (detailText) row.appendChild(detailText);
+      } else {
+        row.append(makeStar(node, row), alias, dot, wrap);
+      }
       return row;
     }
 
