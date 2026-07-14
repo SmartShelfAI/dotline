@@ -2764,6 +2764,12 @@
         updateNodeNoteBtn(n, node);
       };
       bodyInput.oninput = () => {
+        const formatted = formatDetailBullets(bodyInput.value);
+        if (formatted !== bodyInput.value) {
+          const start = bodyInput.selectionStart;
+          bodyInput.value = formatted;
+          bodyInput.setSelectionRange(start, start);
+        }
         node.detail.body = bodyInput.value;
         save();
         updateNodeNoteBtn(n, node);
@@ -2790,8 +2796,11 @@
     }
 
     // In the attached-note body: plain Enter starts a new line.
-    // If the current line begins with "- " we continue a markdown-style list.
-    // If the current line is exactly "- " we end the list (no new bullet).
+    // If the current line begins with "- " or "• " we continue the list with "• ".
+    // If the current line is exactly "- " or "• " we end the list.
+    function formatDetailBullets(value) {
+      return value.replace(/^- /gm, "• ");
+    }
     function continueDetailList(input) {
       const start = input.selectionStart;
       const end = input.selectionEnd;
@@ -2802,8 +2811,8 @@
       const before = value.slice(0, start);
       const after = value.slice(end);
       let insert = "\n";
-      if (/^-\s/.test(currentLine) && currentLine !== "- ") {
-        insert = "\n- ";
+      if (/^[•-]\s/.test(currentLine) && currentLine !== "• " && currentLine !== "- ") {
+        insert = "\n• ";
       }
       input.value = before + insert + after;
       const pos = start + insert.length;
