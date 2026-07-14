@@ -1749,12 +1749,20 @@
     font-size: var(--fs-md);
     font-weight: var(--w-semibold);
     cursor: pointer;
-    padding: 4px 8px;
+    padding: 4px 6px;
     line-height: 1;
     border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     transition:
       color 0.12s,
       background 0.12s;
+  }
+  .node-note-btn svg {
+    display: block;
+    width: 16px;
+    height: 16px;
   }
   .node-note-btn:hover,
   .node-note-btn:focus {
@@ -2637,10 +2645,8 @@
       wrap.appendChild(label);
       if (!viewOnly) {
         const noteBtn = document.createElement("button");
-        noteBtn.className = "node-note-btn" + (hasNodeDetail(node) ? " has-note" : "");
-        noteBtn.textContent = "›";
-        noteBtn.title = "Open note";
-        noteBtn.setAttribute("aria-label", "Open note");
+        noteBtn.className = "node-note-btn";
+        renderNoteBtnContent(noteBtn, node);
         noteBtn.onclick = e => {
           e.stopPropagation();
           openNodeDetail(n, node, i);
@@ -2691,6 +2697,22 @@
       return !!(node.detail && (node.detail.title || node.detail.body));
     }
 
+    const NOTE_ICON_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M20 14V7C20 5.34315 18.6569 4 17 4H7C5.34315 4 4 5.34315 4 7V17C4 18.6569 5.34315 20 7 20H13.5M20 14L13.5 20M20 14H15.5C14.3954 14 13.5 14.8954 13.5 16V20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 8H16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 12H12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+    function renderNoteBtnContent(btn, node) {
+      if (hasNodeDetail(node)) {
+        btn.classList.add("has-note");
+        btn.innerHTML = NOTE_ICON_SVG;
+        btn.title = "Open note";
+        btn.setAttribute("aria-label", "Open note");
+      } else {
+        btn.classList.remove("has-note");
+        btn.textContent = "›";
+        btn.title = "Add note";
+        btn.setAttribute("aria-label", "Add note");
+      }
+    }
+
     function openNodeDetail(n, node, i) {
       if (viewOnly) return;
       closeNodeDetail();
@@ -2707,27 +2729,17 @@
       const bodyInput = panel.querySelector(".node-detail-body");
       const backBtn = panel.querySelector(".node-detail-back");
 
-      const autoTitle = !node.detail.title;
-      titleInput.value = node.detail.title || "note " + (i + 1);
+      titleInput.placeholder = "note " + (i + 1);
+      titleInput.value = node.detail.title || "";
       bodyInput.value = node.detail.body || "";
 
-      titleInput.onfocus = () => {
-        if (autoTitle && titleInput.value === "note " + (i + 1)) {
-          titleInput.value = "";
-        }
-      };
       titleInput.oninput = () => {
         node.detail.title = titleInput.value;
         save();
         updateNodeNoteBtn(n, node);
       };
       titleInput.onblur = () => {
-        if (!titleInput.value.trim()) {
-          node.detail.title = "";
-          titleInput.value = "note " + (i + 1);
-        } else {
-          node.detail.title = titleInput.value;
-        }
+        node.detail.title = titleInput.value;
         save();
         updateNodeNoteBtn(n, node);
       };
@@ -2787,7 +2799,7 @@
       const row = spine.querySelector('.node[data-index="' + i + '"]');
       if (!row) return;
       const btn = row.querySelector(".node-note-btn");
-      if (btn) btn.classList.toggle("has-note", hasNodeDetail(node));
+      if (btn) renderNoteBtnContent(btn, node);
     }
 
     function linkRow(n, i) {
@@ -3144,10 +3156,8 @@
       wrap.appendChild(label);
       if (!viewOnly) {
         const noteBtn = document.createElement("button");
-        noteBtn.className = "node-note-btn" + (hasNodeDetail(node) ? " has-note" : "");
-        noteBtn.textContent = "›";
-        noteBtn.title = "Open note";
-        noteBtn.setAttribute("aria-label", "Open note");
+        noteBtn.className = "node-note-btn";
+        renderNoteBtnContent(noteBtn, node);
         noteBtn.onclick = e => {
           e.stopPropagation();
           openNodeDetail(n, node, i);
