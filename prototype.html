@@ -1646,73 +1646,6 @@
   .tp-hero input:focus {
     border-color: var(--accent);
   }
-  .tp-duration-grid {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-  }
-  .tp-duration-sign {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    border: 1px solid var(--hairline);
-    background: var(--surface-2);
-    color: var(--ink);
-    font-size: var(--fs-xl);
-    font-weight: var(--w-bold);
-    font-family: var(--sans);
-    line-height: 1;
-    cursor: pointer;
-    transition:
-      border-color 0.12s,
-      background 0.12s;
-  }
-  .tp-duration-sign:hover {
-    border-color: var(--accent);
-  }
-  .tp-duration-cell {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .tp-duration-h,
-  .tp-duration-m {
-    width: 84px;
-    text-align: center;
-    font-size: var(--fs-display);
-    font-weight: var(--w-bold);
-    font-family: var(--sans);
-    font-variant-numeric: tabular-nums;
-    border: 1px solid var(--hairline);
-    border-radius: 14px;
-    background: var(--surface-2);
-    color: var(--ink);
-    padding: 16px 6px;
-    outline: none;
-    transition: border-color 0.12s;
-  }
-  .tp-duration-h:focus,
-  .tp-duration-m:focus {
-    border-color: var(--accent);
-  }
-  .tp-duration-h::-webkit-outer-spin-button,
-  .tp-duration-h::-webkit-inner-spin-button,
-  .tp-duration-m::-webkit-outer-spin-button,
-  .tp-duration-m::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
-  .tp-duration-h,
-  .tp-duration-m {
-    -moz-appearance: textfield;
-  }
-  .tp-duration-unit {
-    font-size: var(--fs-md);
-    color: var(--muted);
-    font-weight: var(--w-medium);
-    user-select: none;
-  }
   .tp-sub {
     margin-top: 4px;
     font-size: var(--fs-sm);
@@ -3549,6 +3482,22 @@
       return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
     }
 
+    function parseDuration(s) {
+      if (!s) return null;
+      s = String(s).trim().toLowerCase().replace(/\s+/g, " ");
+      const num = Number(s);
+      if (!isNaN(num) && s !== "") return Math.round(num * 60) * MS_MIN;
+      let m = s.match(/^(?:\+?\s*)?(\d+)\s*h(?:ours?)?(?:\s*(\d+)\s*m(?:in)?)?$/);
+      if (m) return (parseInt(m[1], 10) * 60 + (m[2] ? parseInt(m[2], 10) : 0)) * MS_MIN;
+      m = s.match(/^(?:\+?\s*)?(\d+)\s*m(?:in)?(?:utes?)?$/);
+      if (m) return parseInt(m[1], 10) * MS_MIN;
+      m = s.match(/^(?:\+?\s*)?(\d+)\s*h(?:ours?)?$/);
+      if (m) return parseInt(m[1], 10) * 60 * MS_MIN;
+      m = s.match(/^(?:\+?\s*)?(\d+)[:.](\d+)\s*h?$/);
+      if (m) return (parseInt(m[1], 10) * 60 + parseInt(m[2], 10)) * MS_MIN;
+      return null;
+    }
+
     function formatDuration(ms) {
       let minutes = Math.round(ms / MS_MIN);
       const sign = minutes < 0 ? "-" : "";
@@ -3779,17 +3728,7 @@
       modal.innerHTML = `
       <button class="tp-close" type="button" aria-label="Close">✕</button>
       <div class="tp-hero">
-        <div class="tp-duration-grid">
-          <button class="tp-duration-sign" type="button" aria-label="Toggle direction">−</button>
-          <div class="tp-duration-cell">
-            <input class="tp-duration-h" type="number" inputmode="numeric" min="0" value="0" />
-            <span class="tp-duration-unit">h</span>
-          </div>
-          <div class="tp-duration-cell">
-            <input class="tp-duration-m" type="number" inputmode="numeric" min="0" max="59" value="00" />
-            <span class="tp-duration-unit">min</span>
-          </div>
-        </div>
+        <input class="tp-hero-value" type="text" value="${formatDuration(durationMs)}" />
         <div class="tp-sub"></div>
       </div>
       <div class="tp-field">
@@ -3799,52 +3738,44 @@
         <button class="tp-apply" type="button" aria-label="Apply">✓</button>
       </div>`;
 
-      const signBtn = modal.querySelector(".tp-duration-sign");
-      const hInput = modal.querySelector(".tp-duration-h");
-      const mInput = modal.querySelector(".tp-duration-m");
+      const heroInput = modal.querySelector(".tp-hero-value");
       const slider = modal.querySelector(".tp-slider");
       const sub = modal.querySelector(".tp-sub");
+      let typing = false;
 
-      function durationFromInputs() {
-        const h = parseInt(hInput.value, 10) || 0;
-        const m = Math.min(59, Math.max(0, parseInt(mInput.value, 10) || 0));
-        const sign = signBtn.textContent === "+" ? 1 : -1;
-        return sign * (h * 60 + m) * MS_MIN;
-      }
-      function syncFromDuration() {
-        const totalMin = Math.round(durationMs / MS_MIN);
-        const negative = totalMin < 0;
-        const minAbs = Math.abs(totalMin);
-        const h = Math.floor(minAbs / 60);
-        const m = minAbs % 60;
-        signBtn.textContent = negative ? "−" : "+";
-        hInput.value = h;
-        mInput.value = m < 10 ? "0" + m : m;
+      function syncSlider() {
         slider.value = Math.max(-6, Math.min(6, durationMs / (60 * MS_MIN)));
       }
       function updateSub() {
         sub.textContent = "→ " + formatTime(previousTime + durationMs, anchorDay);
       }
-      function onInputChange() {
-        let m = parseInt(mInput.value, 10) || 0;
-        if (m < 0) m = 0;
-        if (m > 59) m = 59;
-        mInput.value = m < 10 ? "0" + m : m;
-        durationMs = durationFromInputs();
-        updateSub();
+      function refreshHero() {
+        if (!typing) heroInput.value = formatDuration(durationMs);
       }
 
       slider.oninput = () => {
         durationMs = (parseFloat(slider.value) || 0) * 60 * MS_MIN;
-        syncFromDuration();
+        refreshHero();
         updateSub();
       };
-      signBtn.onclick = () => {
-        signBtn.textContent = signBtn.textContent === "+" ? "−" : "+";
-        onInputChange();
+      heroInput.onfocus = () => {
+        typing = true;
       };
-      hInput.oninput = onInputChange;
-      mInput.oninput = onInputChange;
+      heroInput.oninput = () => {
+        // allow a leading minus for the reverse direction (parseDuration is unsigned)
+        const s = heroInput.value.trim();
+        const neg = /^[-−]/.test(s);
+        const parsed = parseDuration(s.replace(/^[-−+]\s*/, ""));
+        if (parsed != null) {
+          durationMs = neg ? -parsed : parsed;
+          syncSlider();
+          updateSub();
+        }
+      };
+      heroInput.onblur = () => {
+        typing = false;
+        heroInput.value = formatDuration(durationMs);
+      };
 
       modal.querySelector(".tp-close").onclick = () => overlay.remove();
       modal.querySelector(".tp-apply").onclick = () => {
@@ -3869,9 +3800,8 @@
       };
       overlay.appendChild(modal);
       document.body.appendChild(overlay);
-      syncFromDuration();
       updateSub();
-      setTimeout(() => hInput.focus(), 0);
+      setTimeout(() => heroInput.focus(), 0);
     }
 
     // ---------- swipe-to-delete wire (drawn over CSS rail only while dragging) ----------
