@@ -26,9 +26,32 @@ npm run check        # runs ESLint + Prettier check
 Then rebuild and deploy:
 
 ```bash
-./tools/build.sh     # or manually: cat _head.html prototype.html _tail.html > index.html
-scp -i ~/.ssh/id_rsa_smart_shelf index.html root@212.24.97.97:/var/www/fungeneering.com/notes/index.html
+./deploy.sh         # build index.html + deploy frontend
 ```
+
+## Baseline check before editing
+
+Never start writing code before confirming the single source of truth. For this repo that means:
+
+1. **Check local git state**  
+   `git status --short` and `git branch -v`. If there are uncommitted changes, stop and ask the user how to handle them before adding new edits.
+
+2. **Sync with GitHub**  
+   `git fetch origin` and verify `origin/HEAD` matches local `HEAD`:  
+   `git log --oneline HEAD..origin/master` should be empty.  
+   If origin is ahead, do not write new code until the local branch is updated.
+
+3. **Check the server before deploying**  
+   Before any deploy, compare the file currently on the server against the committed baseline and the local built file:  
+   ```bash
+   git show HEAD:index.html | md5
+   md5 index.html
+   ssh -i ~/.ssh/id_rsa_smart_shelf -o BatchMode=yes root@212.24.97.97 'md5sum /var/www/fungeneering.com/notes/index.html'
+   ```  
+   Only deploy if the server copy matches `HEAD:index.html` (or matches the local changed `index.html` after a prior deploy from this session). If the server hash differs from both, stop and ask.
+
+4. **Work from the latest baseline**  
+   Edit only after the above checks pass. If edits were already made before verifying the baseline, stop, report the situation, and ask whether to reset, commit, or merge.
 
 ## Rules of thumb
 
